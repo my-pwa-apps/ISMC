@@ -19,7 +19,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
-    "pages:build": "npx @opennextjs/cloudflare build && node -e \"require('fs').copyFileSync('.open-next/worker.js', '.open-next/assets/_worker.js')\"",
+    "pages:build": "npx @opennextjs/cloudflare build && node scripts/prepare-cf-deploy.mjs",
     "pages:deploy": "wrangler pages deploy"
   },
   "dependencies": {
