@@ -9,8 +9,10 @@ import type { PolicyListQuery } from "@/lib/validation/schemas";
 import type { GraphClient } from "@/lib/graph/client";
 import type { GraphDeviceCompliancePolicy, GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
+import { mapWithConcurrency } from "@/lib/utils";
 import { Platform, PolicyStatus, PolicyType, TargetingModel } from "@/domain/enums";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import logger from "@/lib/logger";
 
 function mapCompliancePlatform(odataType: string): Platform {
@@ -70,8 +72,7 @@ export class ComplianceRepository implements PolicyRepository {
     const path = `${ENDPOINTS.COMPLIANCE.list}?${params}`;
     const raw = await this.client.getAll<GraphDeviceCompliancePolicy>(path, "v1.0");
 
-    const policies = await Promise.all(
-      raw.map(async (p) => {
+    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
         try {
           const assignments = await this.client.getAll<GraphAssignment>(
             ENDPOINTS.COMPLIANCE.assignments(p.id),
@@ -82,8 +83,7 @@ export class ComplianceRepository implements PolicyRepository {
           log.warn({ policyId: p.id, err }, "Failed to fetch compliance policy assignments");
           return mapCompliancePolicy(p, this.tenantId, []);
         }
-      })
-    );
+      });
     return policies;
   }
 

@@ -12,7 +12,9 @@ import type { GraphClient } from "@/lib/graph/client";
 import type { GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
 import { Platform, PolicyStatus, PolicyType, TargetingModel } from "@/domain/enums";
+import { mapWithConcurrency } from "@/lib/utils";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { getGraphListConcurrency } from "../shared/graphConcurrency";
 
 interface GraphScript {
   id: string;
@@ -80,14 +82,12 @@ export class ScriptRepository implements PolicyRepository {
     const params = new URLSearchParams({ $top: String(query?.pageSize ?? 100) });
     const path = `${this.listPath}?${params}`;
     const raw = await this.client.getAll<GraphScript>(path, "beta");
-    const policies = await Promise.all(
-      raw.map(async (p) => {
+    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
         const assignments = await this.client
           .getAll<GraphAssignment>(this.assignmentsPath(p.id), "beta")
           .catch(() => []);
         return mapScript(p, this.tenantId, assignments, this.policyType);
-      })
-    );
+      });
     return policies;
   }
 

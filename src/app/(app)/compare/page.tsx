@@ -8,7 +8,7 @@ export default function ComparePage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold">Policy Comparison</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Compare settings side-by-side across up to 5 policies
+          Compare settings side-by-side across 2 policies
         </p>
       </div>
       <ComparisonWorkspace />

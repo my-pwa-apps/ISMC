@@ -14,11 +14,13 @@ import type {
   GraphAssignment,
 } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
+import { mapWithConcurrency } from "@/lib/utils";
 import {
   mapGroupPolicyConfiguration,
   mapDefinitionValues,
 } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import logger from "@/lib/logger";
 
 export class AdminTemplatesRepository implements PolicyRepository {
@@ -34,8 +36,7 @@ export class AdminTemplatesRepository implements PolicyRepository {
     const path = `${ENDPOINTS.ADMIN_TEMPLATES.list}?${params}`;
     const raw = await this.client.getAll<GraphGroupPolicyConfiguration>(path, "beta");
 
-    const policies = await Promise.all(
-      raw.map(async (p) => {
+    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
         try {
           const [assignments, defValues] = await Promise.all([
             this.client.getAll<GraphAssignment>(ENDPOINTS.ADMIN_TEMPLATES.assignments(p.id), "beta"),
@@ -51,8 +52,7 @@ export class AdminTemplatesRepository implements PolicyRepository {
           log.warn({ policyId: p.id, err }, "Failed to enrich admin template");
           return mapGroupPolicyConfiguration(p, this.tenantId, []);
         }
-      })
-    );
+      });
 
     return policies;
   }

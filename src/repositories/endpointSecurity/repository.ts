@@ -12,9 +12,11 @@ import type { PolicyListQuery } from "@/lib/validation/schemas";
 import type { GraphClient } from "@/lib/graph/client";
 import type { GraphIntent, GraphIntentSetting, GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
+import { mapWithConcurrency } from "@/lib/utils";
 import { Platform, PolicyStatus, PolicyType, SettingDataType, SettingSource, TargetingModel } from "@/domain/enums";
 import type { PolicySetting } from "@/domain/models";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import logger from "@/lib/logger";
 
 // ============================================================
@@ -107,8 +109,7 @@ export class EndpointSecurityRepository implements PolicyRepository {
       return true;
     });
 
-    const policies = await Promise.all(
-      filtered.map(async (p) => {
+    const policies = await mapWithConcurrency(filtered, getGraphListConcurrency(), async (p) => {
         try {
           const [assignments, settings] = await Promise.all([
             this.client.getAll<GraphAssignment>(ENDPOINTS.ENDPOINT_SECURITY.assignments(p.id), "beta"),
@@ -121,8 +122,7 @@ export class EndpointSecurityRepository implements PolicyRepository {
           log.warn({ policyId: p.id, err }, "Failed to enrich endpoint security policy");
           return mapIntentPolicy(p, this.tenantId, []);
         }
-      })
-    );
+      });
 
     return policies;
   }

@@ -9,8 +9,10 @@ import type { PolicyListQuery } from "@/lib/validation/schemas";
 import type { GraphClient } from "@/lib/graph/client";
 import type { GraphDeviceConfiguration, GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
+import { mapWithConcurrency } from "@/lib/utils";
 import { mapDeviceConfiguration } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import logger from "@/lib/logger";
 
 export class DeviceConfigRepository implements PolicyRepository {
@@ -25,8 +27,7 @@ export class DeviceConfigRepository implements PolicyRepository {
     const path = `${ENDPOINTS.DEVICE_CONFIGS.list}?${params}`;
     const raw = await this.client.getAll<GraphDeviceConfiguration>(path, "v1.0");
 
-    const policies = await Promise.all(
-      raw.map(async (p) => {
+    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
         try {
           const assignments = await this.client.getAll<GraphAssignment>(
             ENDPOINTS.DEVICE_CONFIGS.assignments(p.id),
@@ -37,8 +38,7 @@ export class DeviceConfigRepository implements PolicyRepository {
           log.warn({ policyId: p.id, err }, "Failed to fetch device config assignments");
           return mapDeviceConfiguration(p, this.tenantId, []);
         }
-      })
-    );
+      });
 
     return policies;
   }

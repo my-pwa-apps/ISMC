@@ -17,8 +17,10 @@ import type {
   GraphODataCollection,
 } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
+import { mapWithConcurrency } from "@/lib/utils";
 import { mapConfigurationPolicy, mapConfigurationPolicySettings } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import logger from "@/lib/logger";
 
 export class SettingsCatalogRepository implements PolicyRepository {
@@ -34,9 +36,7 @@ export class SettingsCatalogRepository implements PolicyRepository {
     const path = buildListUrl(query);
     const raw = await this.client.getAll<GraphConfigurationPolicy>(path, "beta");
 
-    // Fetch assignments in parallel for each policy (batched to avoid throttle)
-    const policies = await Promise.all(
-      raw.map(async (p) => {
+    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
         try {
           const assignments = await this.client.getAll<GraphAssignment>(
             ENDPOINTS.SETTINGS_CATALOG.assignments(p.id),
@@ -47,8 +47,7 @@ export class SettingsCatalogRepository implements PolicyRepository {
           log.warn({ policyId: p.id, err }, "Failed to fetch assignments for policy");
           return mapConfigurationPolicy(p, this.tenantId, []);
         }
-      })
-    );
+      });
 
     log.info({ count: policies.length }, "Settings Catalog policies loaded");
     return policies;

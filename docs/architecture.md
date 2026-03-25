@@ -38,9 +38,9 @@ Browser
   │    ├─ SnapshotService        — Prisma-backed versioning
   │    └─ AuditService           — Prisma-backed audit log
   │
-  └─ Prisma ORM
-       ├─ SQLite (development)
-       └─ PostgreSQL (production)
+    └─ Prisma ORM
+      ├─ SQLite (local development)
+      └─ Cloudflare D1 (deployed environments)
 ```
 
 ---
@@ -153,7 +153,7 @@ NextAuth tables (Account, Session, User, VerificationToken) are also managed by 
 
 ## Mock Mode
 
-Set `NEXT_PUBLIC_ENABLE_MOCK=true` to use in-memory mock data. This is the default in `.env.example` for development. Mock data includes:
+Set `NEXT_PUBLIC_ENABLE_MOCK=true` to use in-memory mock data. The checked-in `.env.example` enables this for local setup after you copy it to `.env.local`. Mock data includes:
 
 - 30+ realistic policy objects across all types
 - BitLocker, Defender AV, Windows Update, macOS FileVault, iOS Passcode settings

@@ -10,7 +10,7 @@ A production-quality web application that functions as a **Group Policy Manageme
 |---|---|
 | **Policy Explorer** | Browse all Intune policies (Settings Catalog, Admin Templates, Device Config, Endpoint Security, Compliance, Scripts, and more) with filtering and list/grid views |
 | **Policy Details** | Drill into any policy: overview metadata, settings tree, assignment breakdown, version history (snapshots), and raw JSON |
-| **Policy Comparison** | Side-by-side settings matrix across up to 5 policies; conflict and unique setting highlighting |
+| **Policy Comparison** | Side-by-side settings matrix across 2 policies with conflict and unique setting highlighting |
 | **Global Search** | Fuzzy full-text search across policy names, descriptions, settings keys, and assignments |
 | **Reports** | 8 built-in reports: Unassigned, Missing Scope Tags, Stale (90d+), Overlapping Assignments, Conflicting Settings, Duplicates, Settings Usage, Migration Readiness |
 | **GPO Migration** | Group Policy Analytics integration — assess GPO settings for migration readiness (Ready / Partial / Blocked) |
@@ -27,12 +27,12 @@ A production-quality web application that functions as a **Group Policy Manageme
 - **Auth**: Auth.js v5 (next-auth) with Microsoft Entra ID (Azure AD) — delegated user auth, server-side token handling
 - **Graph API**: Custom axios-based `GraphClient` with retry/backoff, 429 throttle handling, pagination
 - **State**: TanStack Query v5 (server state), Zustand v5 (client UI state)
-- **Database**: Prisma 5 — SQLite (dev) / PostgreSQL (prod) for snapshots, audit log, saved searches, notes
+- **Database**: Prisma 5 — SQLite for local development and Cloudflare D1 in deployed environments
 - **Search**: Fuse.js fuzzy search — no external search service required
 - **Validation**: Zod throughout (API routes + forms)
 - **Logging**: Pino (structured JSON)
 - **Testing**: Vitest + Testing Library (unit), Playwright (e2e)
-- **Infrastructure**: Docker, GitHub Actions CI
+- **Infrastructure**: Cloudflare Pages, OpenNext for Cloudflare, Wrangler, Docker
 
 ---
 
@@ -61,19 +61,22 @@ cd ISMC
 npm install
 
 # 3. Configure environment
+# macOS/Linux
 cp .env.example .env.local
+# PowerShell
+Copy-Item .env.example .env.local
 # Fill in AUTH_ENTRA_TENANT_ID, AUTH_ENTRA_CLIENT_ID, AUTH_ENTRA_CLIENT_SECRET, AUTH_SECRET
 
 # 4. Set up the database
 npx prisma generate
 npx prisma db push         # dev (SQLite)
-# or: npx prisma migrate deploy  # prod (PostgreSQL)
+# Cloudflare Pages uses the D1 binding configured in wrangler.toml
 
-# 5. Run in development mode (uses mock data by default)
+# 5. Run in development mode
 npm run dev
 ```
 
-> **Mock mode**: Set `NEXT_PUBLIC_ENABLE_MOCK=true` (default in dev) to use realistic in-memory mock data without connecting to a real Intune tenant. Set it to `false` to use live Microsoft Graph data.
+> **Mock mode**: Copying `.env.example` sets `NEXT_PUBLIC_ENABLE_MOCK=true`, which enables the in-memory demo data locally. Set it to `false` to use live Microsoft Graph data.
 
 Open [http://localhost:3000](http://localhost:3000). You'll be redirected to the login page.
 
@@ -92,6 +95,7 @@ See [.env.example](.env.example) for the full list. Key variables:
 | `NEXTAUTH_URL` | Canonical URL of the app (e.g. `http://localhost:3000`) |
 | `DATABASE_URL` | Database connection string |
 | `NEXT_PUBLIC_ENABLE_MOCK` | `true` / `false` — enable mock Graph responses |
+| `GRAPH_LIST_CONCURRENCY` | Maximum parallel per-policy Graph enrichment calls during list operations |
 | `ENABLE_WRITE_OPERATIONS` | `true` / `false` — allow policy mutations (default: false) |
 
 ---

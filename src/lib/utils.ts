@@ -162,6 +162,32 @@ export function chunk<T>(arr: T[], size: number): T[][] {
   return chunks;
 }
 
+export async function mapWithConcurrency<T, R>(
+  arr: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (arr.length === 0) return [];
+
+  const workerCount = Math.max(1, Math.floor(concurrency));
+  const results = new Array<R>(arr.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const currentIndex = nextIndex++;
+      if (currentIndex >= arr.length) return;
+      results[currentIndex] = await mapper(arr[currentIndex], currentIndex);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(workerCount, arr.length) }, () => worker())
+  );
+
+  return results;
+}
+
 // ============================================================
 // URL / routing
 // ============================================================
