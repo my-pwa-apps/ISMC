@@ -13,7 +13,7 @@ export const useComparisonStore = create<ComparisonState>((set) => ({
   selectedIds: [],
   addPolicy: (id) =>
     set((s) =>
-      s.selectedIds.includes(id) || s.selectedIds.length >= 5
+      s.selectedIds.includes(id) || s.selectedIds.length >= 2
         ? s
         : { selectedIds: [...s.selectedIds, id] }
     ),

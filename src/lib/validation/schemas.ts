@@ -55,7 +55,7 @@ export const PolicyListQuerySchema = PaginationSchema.merge(SortSchema).extend({
 // ============================================================
 
 export const CompareRequestSchema = z.object({
-  policyIds: z.array(z.string().uuid()).min(2).max(10),
+  policyIds: z.array(z.string().uuid()).min(2).max(2),
 });
 
 // ============================================================

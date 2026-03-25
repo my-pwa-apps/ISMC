@@ -28,7 +28,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
   const { data: policy, isLoading, error } = usePolicyDetails(policyId);
   const { selectedIds, addPolicy, removePolicy } = useComparisonStore();
   const inComparison = selectedIds.includes(policyId);
-  const atMax = selectedIds.length >= 5;
+  const atMax = selectedIds.length >= 2;
 
   if (isLoading) {
     return (
@@ -74,7 +74,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
             size="sm"
             onClick={() => inComparison ? removePolicy(policyId) : addPolicy(policyId)}
             disabled={!inComparison && atMax}
-            title={inComparison ? "Remove from compare" : atMax ? "Max 5 policies" : "Add to compare"}
+            title={inComparison ? "Remove from compare" : atMax ? "Compare supports 2 policies" : "Add to compare"}
           >
             <GitCompareIcon className="w-3.5 h-3.5 mr-1.5" />
             {inComparison ? "In Compare" : "Compare"}

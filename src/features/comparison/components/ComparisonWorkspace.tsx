@@ -26,7 +26,7 @@ export function ComparisonWorkspace() {
   useEffect(() => {
     const urlIds = searchParams.get("ids");
     if (urlIds) {
-      const ids = urlIds.split(",").filter(Boolean).slice(0, 5);
+      const ids = urlIds.split(",").filter(Boolean).slice(0, 2);
       clearPolicies();
       ids.forEach((id) => addPolicy(id));
     }
@@ -49,7 +49,7 @@ export function ComparisonWorkspace() {
     <div className="space-y-6">
       {/* Policy selector */}
       <div className="rounded-lg border border-border p-4 space-y-3">
-        <h2 className="text-sm font-semibold">Select Policies to Compare (2–5)</h2>
+        <h2 className="text-sm font-semibold">Select 2 Policies to Compare</h2>
 
         {/* Selected chips */}
         {selectedIds.length > 0 && (
@@ -84,7 +84,7 @@ export function ComparisonWorkspace() {
         )}
 
         {/* Search + list */}
-        {selectedIds.length < 5 && (
+        {selectedIds.length < 2 && (
           <>
             <SearchInput
               value={search}

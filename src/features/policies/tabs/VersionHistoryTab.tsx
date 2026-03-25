@@ -26,7 +26,7 @@ export function VersionHistoryTab({ policyId }: VersionHistoryTabProps) {
     );
   }
 
-  const snapshots: PolicySnapshot[] = data?.data ?? [];
+  const snapshots: PolicySnapshot[] = data ?? [];
 
   if (snapshots.length === 0) {
     return (

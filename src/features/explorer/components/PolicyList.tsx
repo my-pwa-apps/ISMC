@@ -108,13 +108,13 @@ export function PolicyList({ policies, loading, searchNode }: PolicyListProps) {
         cell: ({ row }) => {
           const id = row.original.id;
           const alreadyAdded = selectedIds.includes(id);
-          const atMax = selectedIds.length >= 5;
+          const atMax = selectedIds.length >= 2;
           return (
             <Button
               variant="ghost"
               size="icon-sm"
               disabled={alreadyAdded || atMax}
-              title={alreadyAdded ? "Already in comparison" : atMax ? "Max 5 policies" : "Add to compare"}
+              title={alreadyAdded ? "Already in comparison" : atMax ? "Compare supports 2 policies" : "Add to compare"}
               onClick={(e) => {
                 e.stopPropagation();
                 addPolicy(id);

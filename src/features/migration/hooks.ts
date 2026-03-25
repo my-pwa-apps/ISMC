@@ -2,15 +2,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { type PolicyReport } from "@/domain/models";
+import { fetchApiData } from "@/lib/api/fetcher";
 
 export function useMigrationReadiness() {
   return useQuery<PolicyReport>({
     queryKey: ["report", "migration-readiness"],
-    queryFn: async () => {
-      const res = await fetch("/api/reports/migration-readiness");
-      if (!res.ok) throw new Error("Failed to load migration report");
-      return res.json();
-    },
+    queryFn: async () => fetchApiData<PolicyReport>("/api/reports/migration-readiness"),
     staleTime: 5 * 60 * 1000,
   });
 }

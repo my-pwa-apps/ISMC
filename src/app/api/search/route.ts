@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const startedAt = Date.now();
     const body = await request.json();
     const query = SearchQuerySchema.parse(body);
 
@@ -35,7 +36,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       data: results,
-      meta: { count: results.length, query: query.text },
+      meta: {
+        count: results.length,
+        query: query.text,
+        durationMs: Date.now() - startedAt,
+      },
     });
   } catch (err) {
     if (err instanceof ZodError) {

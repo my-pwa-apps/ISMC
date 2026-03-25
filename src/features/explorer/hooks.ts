@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { type PolicyObject } from "@/domain/models";
+import { fetchApi, fetchApiData } from "@/lib/api/fetcher";
 import { type ExplorerFilters } from "./store";
 
 interface PolicyListResponse {
@@ -23,9 +24,16 @@ export function usePolicies(filters: ExplorerFilters, page = 1, pageSize = 50) {
   return useQuery<PolicyListResponse>({
     queryKey: ["policies", filters, page, pageSize],
     queryFn: async () => {
-      const res = await fetch(`/api/policies?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to load policies");
-      return res.json();
+      const response = await fetchApi<PolicyObject[], { count: number; page: number; pageSize: number }>(
+        `/api/policies?${params.toString()}`
+      );
+
+      return {
+        data: response.data,
+        total: response.meta?.count ?? response.data.length,
+        page: response.meta?.page ?? page,
+        pageSize: response.meta?.pageSize ?? pageSize,
+      };
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -34,11 +42,7 @@ export function usePolicies(filters: ExplorerFilters, page = 1, pageSize = 50) {
 export function usePolicy(id: string | null) {
   return useQuery<PolicyObject>({
     queryKey: ["policy", id],
-    queryFn: async () => {
-      const res = await fetch(`/api/policies/${id}`);
-      if (!res.ok) throw new Error("Policy not found");
-      return res.json();
-    },
+    queryFn: async () => fetchApiData<PolicyObject>(`/api/policies/${id}`),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
   });
