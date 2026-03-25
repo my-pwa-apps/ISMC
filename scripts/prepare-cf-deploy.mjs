@@ -22,7 +22,7 @@
  *     .build/             (if present)
  */
 
-import { cpSync, existsSync, mkdirSync, copyFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, copyFileSync, rmSync, writeFileSync } from "node:fs";
 
 const openNext = ".open-next";
 const deploy = `${openNext}/deploy`;
@@ -51,5 +51,20 @@ for (const dir of ["cloudflare", "middleware", "server-functions", ".build", "cl
     console.log(`✓ Copied ${dir}/`);
   }
 }
+
+// 4. _routes.json — bypass the Worker for static assets so CF Pages serves
+//    them directly with correct MIME types (text/css, application/javascript…).
+//    Without this, ALL requests hit _worker.js including /_next/static/*, and
+//    the Worker returns a 404 HTML page (wrong MIME type, browser rejects it).
+const routesJson = {
+  version: 1,
+  include: ["/*"],
+  exclude: [
+    "/_next/static/*",
+    "/favicon.ico",
+  ],
+};
+writeFileSync(`${deploy}/_routes.json`, JSON.stringify(routesJson, null, 2));
+console.log("✓ Written _routes.json");
 
 console.log(`\nDeploy directory ready: ${deploy}`);
