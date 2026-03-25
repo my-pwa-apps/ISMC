@@ -14,7 +14,7 @@ export class AssignmentImpactService {
    * optionally checking for overlap against a list of known policies.
    */
   compute(policy: PolicyObject, allPolicies?: PolicyObject[]): AssignmentImpact {
-    const { assignments } = policy;
+    const assignments = policy.assignments ?? [];
 
     const assignedToAllUsers = assignments.some(
       (a) =>
@@ -47,7 +47,7 @@ export class AssignmentImpactService {
     if (assignments.length === 0) {
       warnings.push("Policy has no assignments and will not be applied to any targets.");
     }
-    if (excludedAssignments.length === 0 && assignedToAllDevices && policy.policyType.includes("Kiosk")) {
+    if (excludedAssignments.length === 0 && assignedToAllDevices && String(policy.policyType).includes("Kiosk")) {
       warnings.push("Kiosk policy is assigned to all devices. Consider scoping to a specific group.");
     }
 
@@ -60,15 +60,15 @@ export class AssignmentImpactService {
       for (const other of allPolicies) {
         if (other.id === policy.id) continue;
 
-        const otherGroups = other.assignments
+        const otherGroups = (other.assignments ?? [])
           .filter((a) => a.target.type === AssignmentTargetType.Group)
           .map((a) => a.target.groupId)
           .filter(Boolean) as string[];
 
-        const otherAllDevices = other.assignments.some(
+        const otherAllDevices = (other.assignments ?? []).some(
           (a) => a.target.type === AssignmentTargetType.AllDevices
         );
-        const otherAllUsers = other.assignments.some(
+        const otherAllUsers = (other.assignments ?? []).some(
           (a) => a.target.type === AssignmentTargetType.AllUsers
         );
 
