@@ -1,8 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaD1 } from "@prisma/adapter-d1";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import logger from "@/lib/logger";
 
+// Declare the Cloudflare Workers bindings used by this app.
+// Must match the [[d1_databases]] binding name in wrangler.toml.
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interface CloudflareEnv {
+    DB: import("@cloudflare/workers-types").D1Database;
+  }
   // eslint-disable-next-line no-var
   var __prismaClient: PrismaClient | undefined;
 }
@@ -16,30 +23,23 @@ function getClient(): PrismaClient {
   if (_client) return _client;
 
   // ---------- Cloudflare Pages / Workers ----------
-  // getCloudflareContext() uses AsyncLocalStorage and is safe to call inside
-  // any async route handler or middleware running in a CF Worker.
+  // getCloudflareContext() uses AsyncLocalStorage; safe to call inside any
+  // async route handler running in a CF Worker (set up by OpenNext wrapper).
   try {
-    // Dynamic require avoids this import being evaluated at build-time in
-    // environments that don't have the CF runtime available.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getCloudflareContext } = require("@opennextjs/cloudflare");
     const { env } = getCloudflareContext();
     if (env?.DB) {
       _client = new PrismaClient({ adapter: new PrismaD1(env.DB) });
       return _client;
     }
-    // CF Worker runtime is present but DB binding is missing — this means
-    // wrangler.toml [[d1_databases]] is not set or the binding name is wrong.
-    // Throw immediately rather than silently falling through to a broken path.
     if (env !== undefined) {
       throw new Error(
         "Cloudflare D1 binding \"DB\" not found. Check [[d1_databases]] in wrangler.toml."
       );
     }
   } catch (err) {
-    // Only re-throw binding-misconfiguration errors; swallow the
-    // \"not a CF Worker\" error that occurs during local development.
     if (err instanceof Error && err.message.includes("D1 binding")) throw err;
+    // getCloudflareContext() throws when called outside a CF Worker context
+    // (local dev, CI). Fall through to the SQLite local-dev path below.
   }
 
   // ---------- Local development (SQLite file via DATABASE_URL) ----------

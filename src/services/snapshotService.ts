@@ -50,7 +50,6 @@ export class SnapshotService {
     const records = await db.policySnapshot.findMany({
       where: { policyId },
       orderBy: { createdAt: "desc" },
-      include: { createdBy: true },
     });
     return records.map(toSnapshot);
   }
@@ -61,7 +60,6 @@ export class SnapshotService {
   async getSnapshot(snapshotId: string): Promise<PolicySnapshot> {
     const record = await db.policySnapshot.findUniqueOrThrow({
       where: { id: snapshotId },
-      include: { createdBy: true },
     });
     return toSnapshot(record);
   }
@@ -74,7 +72,6 @@ export class SnapshotService {
       where: { tenantId },
       orderBy: { createdAt: "desc" },
       take: limit,
-      include: { createdBy: true },
     });
     return records.map(toSnapshot);
   }
