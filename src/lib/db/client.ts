@@ -57,7 +57,6 @@ function getClient(): PrismaClient {
   });
 
   if (process.env.NODE_ENV === "development") {
-    // @ts-expect-error – Prisma event types are correct at runtime
     client.$on("query", (e: { query: string; duration: number }) => {
       if (e.duration > 200) {
         logger.warn({ query: e.query, durationMs: e.duration }, "Slow Prisma query");
@@ -65,7 +64,6 @@ function getClient(): PrismaClient {
     });
   }
 
-  // @ts-expect-error – Prisma event types are correct at runtime
   client.$on("error", (e: { message: string }) => {
     logger.error({ message: e.message }, "Prisma error");
   });

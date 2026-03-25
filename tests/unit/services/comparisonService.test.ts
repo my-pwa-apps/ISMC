@@ -11,7 +11,7 @@ describe("ComparisonService", () => {
   beforeEach(() => {
     const registry = getMockRegistry();
     inventoryService = new PolicyInventoryService(registry);
-    comparisonService = new ComparisonService(inventoryService);
+    comparisonService = new ComparisonService();
   });
 
   it("comparing a policy to itself returns all matches", async () => {
