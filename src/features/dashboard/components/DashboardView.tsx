@@ -13,6 +13,7 @@ import { useDashboardStats } from "@/features/dashboard/hooks";
 import { KpiCard, KpiGridSkeleton } from "./KpiCard";
 import { RecentPolicies } from "./RecentPolicies";
 import { getPolicyTypeLabel } from "@/lib/utils";
+import { PolicyType } from "@/domain/enums";
 
 export function DashboardView() {
   const { data: stats, isLoading, error } = useDashboardStats();
@@ -96,7 +97,7 @@ export function DashboardView() {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm"
                 >
                   <span className="font-medium">{count}</span>
-                  <span className="text-muted-foreground">{getPolicyTypeLabel(type)}</span>
+                  <span className="text-muted-foreground">{getPolicyTypeLabel(type as PolicyType)}</span>
                 </div>
               ))}
           </div>

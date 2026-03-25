@@ -79,16 +79,15 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
             <GitCompareIcon className="w-3.5 h-3.5 mr-1.5" />
             {inComparison ? "In Compare" : "Compare"}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
+          <a
+            href={buildIntuneUrl(policyId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 text-xs font-medium rounded border border-border bg-transparent hover:bg-muted transition-colors"
           >
-            <a href={buildIntuneUrl(policyId)} target="_blank" rel="noopener noreferrer">
-              <ExternalLinkIcon className="w-3.5 h-3.5 mr-1.5" />
-              Open in Intune
-            </a>
-          </Button>
+            <ExternalLinkIcon className="w-3.5 h-3.5" />
+            Open in Intune
+          </a>
         </div>
       </div>
 

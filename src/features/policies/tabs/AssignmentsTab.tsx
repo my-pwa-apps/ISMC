@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AssignmentBadge } from "@/components/shared/assignment-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Users2Icon, MonitorIcon, GroupIcon, MinusCircleIcon, FilterIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipRoot, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AssignmentsTabProps {
   policy: PolicyObject;
@@ -87,7 +87,7 @@ export function AssignmentsTab({ policy }: AssignmentsTabProps) {
                   </span>
                   <div className="flex items-center gap-1.5">
                     {a.target.filter && (
-                      <Tooltip>
+                      <TooltipRoot>
                         <TooltipTrigger asChild>
                           <span className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 cursor-help">
                             <FilterIcon className="w-3 h-3" />
@@ -99,7 +99,7 @@ export function AssignmentsTab({ policy }: AssignmentsTabProps) {
                             {a.target.filter.rule}
                           </TooltipContent>
                         )}
-                      </Tooltip>
+                      </TooltipRoot>
                     )}
                     <AssignmentBadge assignment={a} />
                   </div>
