@@ -29,6 +29,11 @@ const GRAPH_SCOPES = [
 ].join(" ");
 
 export const authConfig: NextAuthConfig = {
+  // Required for CF Pages / reverse-proxy deployments — tells NextAuth v5 to
+  // trust the Host header coming from Cloudflare's edge instead of failing
+  // the CSRF / redirect-URI validation and silently looping back to sign-in.
+  trustHost: true,
+
   // JWT strategy — no database adapter needed; tokens stored in encrypted cookies.
   // Use JWT so we can embed the access token for server-side Graph calls.
   session: {
