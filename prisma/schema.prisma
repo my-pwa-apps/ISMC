@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Auth (NextAuth / Auth.js adapter tables)
+// ============================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  ext_expires_in    Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // App-specific
+  role          String    @default("viewer") // viewer | editor | admin
+  tenantId      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  auditEntries  AuditEntry[]
+  savedSearches SavedSearch[]
+  snapshots     PolicySnapshot[]
+  notes         PolicyNote[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// Policy Snapshots — immutable point-in-time captures
+// ============================================================
+
+model PolicySnapshot {
+  id            String   @id @default(cuid())
+  policyId      String   // Intune policy GUID
+  policyType    String   // PolicyType enum value
+  displayName   String
+  tenantId      String
+  snapshotData  String   // JSON blob of the full normalized PolicyObject
+  rawGraphData  String?  // JSON blob of original Graph response (for replay)
+  note          String?
+  createdAt     DateTime @default(now())
+  createdById   String?
+  createdBy     User?    @relation(fields: [createdById], references: [id])
+
+  @@index([policyId])
+  @@index([tenantId, createdAt])
+}
+
+// ============================================================
+// Audit Trail
+// ============================================================
+
+model AuditEntry {
+  id          String   @id @default(cuid())
+  tenantId    String
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id])
+  action      String   // AuditAction enum value
+  entityType  String   // "Policy" | "Assignment" | "Snapshot" etc.
+  entityId    String
+  entityName  String?
+  details     String?  // JSON blob with before/after values
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([entityId])
+}
+
+// ============================================================
+// Saved Searches
+// ============================================================
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  query       String   // JSON-serialised SearchQuery object
+  isShared    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================================
+// Policy Notes / Annotations
+// ============================================================
+
+model PolicyNote {
+  id          String   @id @default(cuid())
+  policyId    String
+  authorId    String?
+  author      User?    @relation(fields: [authorId], references: [id])
+  content     String
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([policyId])
+}
+
+// ============================================================
+// Policy Tags (owner / team / domain labels)
+// ============================================================
+
+model PolicyTag {
+  id         String   @id @default(cuid())
+  policyId   String
+  tenantId   String
+  key        String   // e.g., "owner", "team", "environment"
+  value      String   // e.g., "security-team", "prod"
+  createdAt  DateTime @default(now())
+
+  @@unique([policyId, key])
+  @@index([tenantId, key, value])
+}
+
+// ============================================================
+// GPO Import Cache
+// ============================================================
+
+model GpoImport {
+  id            String   @id @default(cuid())
+  tenantId      String
+  importName    String
+  sourceData    String   // JSON blob of Group Policy Analytics response
+  status        String   @default("pending") // pending | processing | ready | failed
+  settingsCount Int      @default(0)
+  supportedCount Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// ============================================================
+// App Configuration (per-tenant overrides)
+// ============================================================
+
+model TenantConfig {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  displayName     String?
+  environment     String   @default("production") // development | staging | production
+  enableBeta      Boolean  @default(true)
+  enableWrites    Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+}

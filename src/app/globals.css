@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   CSS Custom Properties (used by Tailwind semantic tokens)
+   ============================================================ */
+@layer base {
+  :root {
+    --background: 210 20% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 211 100% 42%;    /* #0078d4 Microsoft Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 18% 94%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 18% 92%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 18% 92%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 70% 51%;   /* #d13438 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 89%;
+    --input: 214 20% 89%;
+    --ring: 211 100% 42%;
+    --radius: 4px;
+  }
+}
+
+/* ============================================================
+   Base typography
+   ============================================================ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-surface-overlay text-foreground;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1 { @apply text-2xl font-semibold tracking-tight; }
+  h2 { @apply text-xl font-semibold tracking-tight; }
+  h3 { @apply text-base font-semibold; }
+  h4 { @apply text-sm font-semibold; }
+
+  code, pre {
+    font-family: "Cascadia Code", "Consolas", "Monaco", monospace;
+    font-size: 0.875em;
+  }
+}
+
+/* ============================================================
+   App layout
+   ============================================================ */
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 48px 1fr;
+  min-height: 100vh;
+}
+
+.app-shell-sidebar {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  background-color: #292929;
+  color: #e8e8e8;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.app-shell-header {
+  grid-column: 2;
+  grid-row: 1;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-shell-main {
+  grid-column: 2;
+  grid-row: 2;
+  overflow: auto;
+  background-color: #f0f2f5;
+}
+
+/* ============================================================
+   Sidebar nav
+   ============================================================ */
+.sidebar-nav-item {
+  @apply flex items-center gap-2 px-3 py-2 text-sm rounded-sm transition-colors cursor-pointer;
+  color: #d4d4d4;
+}
+
+.sidebar-nav-item:hover {
+  background-color: #383838;
+  color: #ffffff;
+}
+
+.sidebar-nav-item.active {
+  background-color: #0078d4;
+  color: #ffffff;
+}
+
+.sidebar-nav-item.active:hover {
+  background-color: #106ebe;
+}
+
+/* Tree node indentation */
+.sidebar-tree-node {
+  position: relative;
+}
+
+.sidebar-tree-node::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #444;
+}
+
+/* ============================================================
+   Shimmer / skeleton loading
+   ============================================================ */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e8e8e8 50%,
+    #f0f0f0 75%
+  );
+  background-size: 700px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* ============================================================
+   Data table
+   ============================================================ */
+.data-table th {
+  @apply text-left px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-muted border-b;
+  white-space: nowrap;
+}
+
+.data-table td {
+  @apply px-3 py-2 text-sm border-b border-border;
+}
+
+.data-table tbody tr:hover {
+  @apply bg-surface-subtle;
+}
+
+/* ============================================================
+   Status badges
+   ============================================================ */
+.badge-success { @apply bg-status-success-bg text-status-success; }
+.badge-warning { @apply bg-status-warning-bg text-status-warning; }
+.badge-error   { @apply bg-status-error-bg text-status-error; }
+.badge-info    { @apply bg-status-info-bg text-status-info; }
+
+/* ============================================================
+   Diff view
+   ============================================================ */
+.diff-match    { @apply bg-green-50 text-green-800; }
+.diff-conflict { @apply bg-red-50 text-red-800; }
+.diff-only-left  { @apply bg-blue-50 text-blue-800; }
+.diff-only-right { @apply bg-yellow-50 text-yellow-800; }
+
+/* ============================================================
+   Environment banner
+   ============================================================ */
+.env-banner-dev  { @apply bg-yellow-400 text-yellow-900; }
+.env-banner-staging { @apply bg-orange-400 text-orange-900; }
+.env-banner-prod { @apply bg-red-600 text-white; }
+
+/* ============================================================
+   Utility overrides
+   ============================================================ */
+.scrollbar-thin::-webkit-scrollbar { width: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+/* Focus ring consistent with Microsoft design */
+*:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}
