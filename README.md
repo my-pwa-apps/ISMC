@@ -95,6 +95,7 @@ See [.env.example](.env.example) for the full list. Key variables:
 | `NEXTAUTH_URL` | Canonical URL of the app (e.g. `http://localhost:3000`) |
 | `DATABASE_URL` | Database connection string |
 | `NEXT_PUBLIC_ENABLE_MOCK` | `true` / `false` — enable mock Graph responses |
+| `GRAPH_MAX_CONCURRENT_REQUESTS` | Maximum concurrent in-flight Graph API requests per application request |
 | `GRAPH_LIST_CONCURRENCY` | Maximum parallel per-policy Graph enrichment calls during list operations |
 | `ENABLE_WRITE_OPERATIONS` | `true` / `false` — allow policy mutations (default: false) |
 

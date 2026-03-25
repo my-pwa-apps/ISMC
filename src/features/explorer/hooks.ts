@@ -10,6 +10,10 @@ interface PolicyListResponse {
   total: number;
   page: number;
   pageSize: number;
+  nextCursor?: string;
+  prevCursor?: string;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export function usePolicies(filters: ExplorerFilters, page = 1, pageSize = 50) {
@@ -24,15 +28,31 @@ export function usePolicies(filters: ExplorerFilters, page = 1, pageSize = 50) {
   return useQuery<PolicyListResponse>({
     queryKey: ["policies", filters, page, pageSize],
     queryFn: async () => {
-      const response = await fetchApi<PolicyObject[], { count: number; page: number; pageSize: number }>(
+      const response = await fetchApi<
+        PolicyObject[],
+        {
+          count: number;
+          totalCount: number;
+          page: number;
+          pageSize: number;
+          nextCursor?: string;
+          prevCursor?: string;
+          hasNextPage?: boolean;
+          hasPreviousPage?: boolean;
+        }
+      >(
         `/api/policies?${params.toString()}`
       );
 
       return {
         data: response.data,
-        total: response.meta?.count ?? response.data.length,
+        total: response.meta?.totalCount ?? response.meta?.count ?? response.data.length,
         page: response.meta?.page ?? page,
         pageSize: response.meta?.pageSize ?? pageSize,
+        nextCursor: response.meta?.nextCursor,
+        prevCursor: response.meta?.prevCursor,
+        hasNextPage: response.meta?.hasNextPage ?? false,
+        hasPreviousPage: response.meta?.hasPreviousPage ?? page > 1,
       };
     },
     staleTime: 2 * 60 * 1000,

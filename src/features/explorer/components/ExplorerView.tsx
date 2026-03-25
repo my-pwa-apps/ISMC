@@ -132,6 +132,33 @@ export function ExplorerView({ initialFilters }: { initialFilters?: ExplorerFilt
           )}
         </>
       )}
+
+      {!isLoading && (data?.total ?? 0) > 0 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>
+            Showing {(page - 1) * 50 + 1}–{Math.min(page * 50, data?.total ?? 0)} of {data?.total ?? 0}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!data?.hasPreviousPage}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Prev
+            </Button>
+            <span>Page {data?.page ?? page}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!data?.hasNextPage}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

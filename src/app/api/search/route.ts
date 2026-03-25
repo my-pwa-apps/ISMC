@@ -9,6 +9,7 @@ import { createRepositoryRegistry } from "@/repositories/factory";
 import { PolicyInventoryService } from "@/services/policyInventoryService";
 import { SearchService } from "@/services/searchService";
 import { SearchQuerySchema } from "@/lib/validation/schemas";
+import { InvalidCursorError, paginateItems } from "@/lib/pagination";
 import logger from "@/lib/logger";
 import { ZodError } from "zod";
 
@@ -33,11 +34,16 @@ export async function POST(request: NextRequest) {
 
     const policies = await inventory.listAll();
     const results = searcher.search(policies, query);
+    const page = paginateItems(results, {
+      page: query.page,
+      pageSize: query.pageSize,
+      cursor: query.cursor,
+    });
 
     return NextResponse.json({
-      data: results,
+      data: page.data,
       meta: {
-        count: results.length,
+        ...page.meta,
         query: query.text,
         durationMs: Date.now() - startedAt,
       },
@@ -45,6 +51,9 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid search query", details: err.flatten() }, { status: 400 });
+    }
+    if (err instanceof InvalidCursorError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
     }
     logger.error({ err }, "POST /api/search failed");
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

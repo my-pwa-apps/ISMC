@@ -10,6 +10,8 @@ import { getServerSession } from "@/lib/auth/serverSession";
 import { createRepositoryRegistry } from "@/repositories/factory";
 import { PolicyInventoryService } from "@/services/policyInventoryService";
 import { PolicyListQuerySchema } from "@/lib/validation/schemas";
+import { InvalidCursorError, paginateItems } from "@/lib/pagination";
+import { type PolicyObject } from "@/domain/models";
 import logger from "@/lib/logger";
 import { ZodError } from "zod";
 
@@ -39,20 +41,51 @@ export async function GET(request: NextRequest) {
       ? await service.listByType(query.policyType, query)
       : await service.listAll(query);
 
+    const sortedPolicies = sortPolicies(policies, query.sortBy, query.sortDir);
+    const page = paginateItems(sortedPolicies, {
+      page: query.page,
+      pageSize: query.pageSize,
+      cursor: query.cursor,
+    });
+
     return NextResponse.json({
-      data: policies,
-      meta: {
-        count: policies.length,
-        page: query.page,
-        pageSize: query.pageSize,
-      },
+      data: page.data,
+      meta: page.meta,
     });
   } catch (err) {
     if (err instanceof ZodError) {
       return NextResponse.json({ error: "Invalid query", details: err.flatten() }, { status: 400 });
     }
+    if (err instanceof InvalidCursorError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     logger.error({ err }, "GET /api/policies failed");
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
+}
+
+function sortPolicies(
+  policies: PolicyObject[],
+  sortBy?: string,
+  sortDir: "asc" | "desc" = "asc"
+): PolicyObject[] {
+  const direction = sortDir === "asc" ? 1 : -1;
+  const sorted = [...policies];
+
+  sorted.sort((left, right) => {
+    switch (sortBy) {
+      case "displayName":
+        return left.displayName.localeCompare(right.displayName) * direction;
+      case "createdDateTime":
+        return (new Date(left.createdDateTime).getTime() - new Date(right.createdDateTime).getTime()) * direction;
+      case "settingCount":
+        return (left.settingCount - right.settingCount) * direction;
+      case "lastModifiedDateTime":
+      default:
+        return (new Date(left.lastModifiedDateTime).getTime() - new Date(right.lastModifiedDateTime).getTime()) * direction;
+    }
+  });
+
+  return sorted;
 }
 

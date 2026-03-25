@@ -31,7 +31,37 @@ import logger from "@/lib/logger";
 
 const MAX_RETRIES = Number(process.env.GRAPH_MAX_RETRIES ?? 3);
 const TIMEOUT_MS = Number(process.env.GRAPH_TIMEOUT_MS ?? 30_000);
+const MAX_CONCURRENT_REQUESTS = Number(process.env.GRAPH_MAX_CONCURRENT_REQUESTS ?? 8);
 const RETRY_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+class RequestGate {
+  private active = 0;
+  private readonly queue: Array<() => void> = [];
+
+  constructor(private readonly concurrency: number) {}
+
+  async acquire(): Promise<() => void> {
+    if (this.active < this.concurrency) {
+      this.active++;
+      return () => this.release();
+    }
+
+    await new Promise<void>((resolve) => {
+      this.queue.push(() => {
+        this.active++;
+        resolve();
+      });
+    });
+
+    return () => this.release();
+  }
+
+  private release(): void {
+    this.active--;
+    const next = this.queue.shift();
+    if (next) next();
+  }
+}
 
 // ============================================================
 // Error types
@@ -154,6 +184,11 @@ export class GraphClient {
   private readonly axiosV1: AxiosInstance;
   private readonly axiosBeta: AxiosInstance;
   private readonly correlationId?: string;
+  private readonly requestGate = new RequestGate(
+    Number.isFinite(MAX_CONCURRENT_REQUESTS) && MAX_CONCURRENT_REQUESTS >= 1
+      ? Math.floor(MAX_CONCURRENT_REQUESTS)
+      : 8
+  );
 
   constructor(opts: GraphClientOptions) {
     this.correlationId = opts.correlationId;
@@ -238,6 +273,7 @@ export class GraphClient {
     let attempt = 0;
 
     while (true) {
+      const release = await this.requestGate.acquire();
       try {
         const response = await fn();
         return response.data;
@@ -259,13 +295,10 @@ export class GraphClient {
           { status, attempt, retryAfterSeconds: retryAfter },
           "Graph request failed — retrying"
         );
-
-        if (status === 429) {
-          throw new GraphThrottleError(retryAfter, headers["request-id"]);
-        }
-
         await sleep(retryAfter * 1000);
         attempt++;
+      } finally {
+        release();
       }
     }
   }
@@ -274,6 +307,9 @@ export class GraphClient {
     if (isAxiosError(err) && err.response) {
       const { status, data, headers } = err.response as AxiosResponse<GraphError>;
       const requestId = headers["request-id"] ?? undefined;
+      if (status === 429) {
+        return new GraphThrottleError(Number(headers["retry-after"] ?? 1), requestId);
+      }
       return new GraphApiError(
         status,
         data?.error?.code ?? "Unknown",

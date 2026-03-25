@@ -12,6 +12,7 @@ import { Platform, PolicyType } from "@/domain/enums";
 export const PaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
+  cursor: z.string().optional(),
 });
 
 export const SortSchema = z.object({
@@ -33,6 +34,9 @@ export const SearchQuerySchema = z.object({
   modifiedBefore: z.string().datetime().optional(),
   searchSettings: z.boolean().default(true),
   searchAssignments: z.boolean().default(false),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  cursor: z.string().optional(),
 });
 
 // ============================================================
