@@ -12,6 +12,7 @@
 
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+import logger from "@/lib/logger";
 
 export interface ServerAuth {
   /** Live Microsoft Graph access token — server-side only. */
@@ -45,10 +46,28 @@ export async function getServerSession(
     return MOCK_AUTH;
   }
 
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    logger.error("AUTH_SECRET is not configured — cannot validate session");
+    return null;
+  }
+
   try {
+    // In production (HTTPS), Auth.js names the cookie __Secure-authjs.session-token.
+    // getToken() defaults secureCookie=false which looks for the non-secure name,
+    // causing decryption to fail (salt = cookieName → wrong key derivation).
+    // Explicitly detect HTTPS from the request URL so both names work correctly.
+    const isHttps = request.url.startsWith("https://");
+    const cookieName = isHttps
+      ? "__Secure-authjs.session-token"
+      : "authjs.session-token";
+
     const token = await getToken({
       req: request,
-      secret: process.env.AUTH_SECRET!,
+      secret,
+      secureCookie: isHttps,
+      cookieName,
+      salt: cookieName, // Auth.js v5: salt must equal cookieName (key derivation)
     });
 
     if (!token?.accessToken) return null;
