@@ -3,6 +3,11 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 pages_build_output_dir = ".open-next/deploy"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "ismc-db"
+database_id = "5647c2b6-e229-4fc4-93ad-a405723f0d60"
+
 [vars]
 # Non-secret environment variables can go here.
 # Secrets (AUTH_SECRET, AUTH_ENTRA_CLIENT_SECRET, etc.) must be set
