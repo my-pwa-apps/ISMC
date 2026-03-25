@@ -37,10 +37,15 @@ export function middleware(req: NextRequest) {
   }
 
   // next-auth v5 beta session cookie name is "authjs.session-token" (dev)
-  // or "__Secure-authjs.session-token" (production/HTTPS)
+  // or "__Secure-authjs.session-token" (production/HTTPS).
+  // When the JWT exceeds 4 KB, Auth.js splits it into chunks (.0, .1, …).
+  // We check both the unchunked and first-chunk names so large tokens still
+  // authenticate correctly.
   const sessionCookie =
     req.cookies.get("authjs.session-token") ??
-    req.cookies.get("__Secure-authjs.session-token");
+    req.cookies.get("__Secure-authjs.session-token") ??
+    req.cookies.get("authjs.session-token.0") ??
+    req.cookies.get("__Secure-authjs.session-token.0");
 
   if (!sessionCookie) {
     const loginUrl = new URL("/login", req.nextUrl.origin);
