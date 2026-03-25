@@ -1,7 +1,7 @@
 name = "ismc"
 compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".open-next/cloudflare"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+pages_build_output_dir = ".open-next/assets"
 
 [vars]
 # Non-secret environment variables can go here.
