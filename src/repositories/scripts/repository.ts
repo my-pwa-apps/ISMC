@@ -45,7 +45,7 @@ function mapScript(
     createdDateTime: raw.createdDateTime,
     lastModifiedDateTime: raw.lastModifiedDateTime,
     settingCount: 1, // A script is effectively one "setting"
-    scopeTags: (raw.roleScopeTagIds ?? []).map((id) => ({ id, displayName: id })),
+    scopeTags: [], // resolved by PolicyInventoryService.enrichWithScopeTags
     roleScopeTagIds: raw.roleScopeTagIds ?? [],
     assignments: mapAssignments(assignments),
     targetingModel: TargetingModel.Device,

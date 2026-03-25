@@ -12,7 +12,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS_PREFIX = ["/login", "/api/auth", "/api/auth-debug", "/_next", "/favicon"];
+const PUBLIC_PATHS_PREFIX = ["/login", "/api/auth", "/_next", "/favicon"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS_PREFIX.some((p) => pathname.startsWith(p));
@@ -25,14 +25,12 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow full bypass when running in mock/demo mode (local dev only)
+  // Allow full bypass when running in mock/demo mode.
+  // IMPORTANT: the demo cookie check is deliberately gated behind the same
+  // mock-mode flag so it cannot be exploited in production builds.
   if (process.env.NEXT_PUBLIC_ENABLE_MOCK === "true") {
-    return NextResponse.next();
-  }
-
-  // Also allow bypass via demo cookie (set by /api/auth/demo)
-  const demoMode = req.cookies.get("ismc_demo_mode");
-  if (demoMode?.value === "1") {
+    const demoMode = req.cookies.get("ismc_demo_mode");
+    if (demoMode?.value === "1") return NextResponse.next();
     return NextResponse.next();
   }
 

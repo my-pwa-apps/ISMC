@@ -23,12 +23,12 @@ const VALID_REPORT_TYPES = new Set<ReportType>([
 ]);
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ type: string }> }
 ) {
-  const session = await getServerSession();
+  const session = await getServerSession(request);
 
-  if (!session?.accessToken) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

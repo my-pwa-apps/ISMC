@@ -1,30 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { MockPolicyRepository, getMockRegistry } from "@/repositories/mock";
-import { PolicyType } from "@/domain/enums";
+import { getMockRegistry } from "@/repositories/mock";
 
 describe("MockPolicyRepository", () => {
   it("listPolicies returns policies", async () => {
-    const repo = new MockPolicyRepository();
+    const repo = getMockRegistry().settingsCatalog;
     const result = await repo.listPolicies();
-    expect(result.data.length).toBeGreaterThan(0);
-    expect(typeof result.total).toBe("number");
+    expect(result.length).toBeGreaterThan(0);
   });
 
   it("pagination works correctly", async () => {
-    const repo = new MockPolicyRepository();
+    const repo = getMockRegistry().settingsCatalog;
     const page1 = await repo.listPolicies({ page: 1, pageSize: 3 });
     const page2 = await repo.listPolicies({ page: 2, pageSize: 3 });
-    expect(page1.data.length).toBeLessThanOrEqual(3);
-    if (page1.total > 3) {
-      expect(page2.data.length).toBeGreaterThan(0);
-      expect(page1.data[0].id).not.toBe(page2.data[0]?.id);
+    expect(page1.length).toBeLessThanOrEqual(3);
+    const all = await repo.listPolicies();
+    if (all.length > 3) {
+      expect(page2.length).toBeGreaterThan(0);
+      expect(page1[0]?.id).not.toBe(page2[0]?.id);
     }
   });
 
   it("getPolicy returns correct policy by id", async () => {
-    const repo = new MockPolicyRepository();
+    const repo = getMockRegistry().settingsCatalog;
     const all = await repo.listPolicies();
-    const first = all.data[0]!;
+    const first = all[0]!;
     const found = await repo.getPolicy(first.id);
     expect(found?.id).toBe(first.id);
     expect(found?.displayName).toBe(first.displayName);

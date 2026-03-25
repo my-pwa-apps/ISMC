@@ -70,7 +70,7 @@ export function mapDeviceConfiguration(
     lastModifiedDateTime: raw.lastModifiedDateTime,
     version: String(raw.version ?? ""),
     settingCount: countSettings(raw),
-    scopeTags: (raw.roleScopeTagIds ?? []).map((id) => ({ id, displayName: id })),
+    scopeTags: [], // resolved by PolicyInventoryService.enrichWithScopeTags
     roleScopeTagIds: raw.roleScopeTagIds ?? [],
     assignments: mapAssignments(assignments),
     targetingModel: TargetingModel.Unknown,

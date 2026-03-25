@@ -63,7 +63,9 @@ export class SearchService {
   search(policies: PolicyObject[], query: SearchQuery): SearchResult[] {
     let filtered = this.preFilter(policies, query);
 
-    if (!query.text.trim()) {
+    const trimmed = query.text.trim();
+
+    if (!trimmed) {
       // No text query — return pre-filtered results sorted by last modified
       return filtered
         .sort(
@@ -81,9 +83,13 @@ export class SearchService {
         }));
     }
 
+    if (trimmed.length < 2) {
+      return []; // too short for meaningful search
+    }
+
     const documents = filtered.map(buildDocument);
     const fuse = new Fuse(documents, FUSE_OPTIONS);
-    const results = fuse.search(query.text);
+    const results = fuse.search(trimmed);
 
     return results.map((result) => ({
       policyId: result.item.policyId,

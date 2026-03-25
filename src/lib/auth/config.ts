@@ -64,10 +64,9 @@ export const authConfig: NextAuthConfig = {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
-        token.tenantId = account.providerAccountId.split(".").pop() // heuristic; override below
-          ?? process.env.AUTH_ENTRA_TENANT_ID;
-
-        // Extract tenant ID from the ID token claims
+        // Tenant ID comes from the ID token `tid` claim (the reliable source).
+        // Fall back to the env var for single-tenant deployments.
+        token.tenantId = process.env.AUTH_ENTRA_TENANT_ID;
         if (profile) {
           const p = profile as Record<string, unknown>;
           if (typeof p.tid === "string") token.tenantId = p.tid;
@@ -84,6 +83,9 @@ export const authConfig: NextAuthConfig = {
         } catch (err) {
           logger.error({ err }, "Failed to refresh Entra access token");
           token.error = "RefreshAccessTokenError";
+          // Back off 30 s so the next request doesn't immediately retry
+          // the failed refresh and loop indefinitely.
+          token.expiresAt = Math.floor(Date.now() / 1000) + 30;
         }
       }
 
@@ -91,8 +93,9 @@ export const authConfig: NextAuthConfig = {
     },
 
     async session({ session, token }) {
-      // Expose safe, non-sensitive data to session
-      session.accessToken = token.accessToken as string;
+      // SECURITY: Do NOT add accessToken here — the session object is served
+      // to the browser via /api/auth/session and useSession().
+      // Access tokens are read server-side only via getServerSession(request).
       session.tenantId = token.tenantId as string;
       session.error = token.error as string | undefined;
       return session;
@@ -121,7 +124,7 @@ export const authConfig: NextAuthConfig = {
 import type {} from "@auth/core/jwt";
 declare module "next-auth" {
   interface Session {
-    accessToken?: string;
+    // accessToken intentionally excluded — use getServerSession(request) in API routes.
     tenantId?: string;
     error?: string;
   }

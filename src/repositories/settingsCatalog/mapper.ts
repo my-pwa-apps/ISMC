@@ -57,7 +57,7 @@ export function mapConfigurationPolicy(
     createdDateTime: raw.createdDateTime,
     lastModifiedDateTime: raw.lastModifiedDateTime,
     settingCount: raw.settingCount ?? 0,
-    scopeTags: (raw.roleScopeTagIds ?? []).map((id) => ({ id, displayName: id })),
+    scopeTags: [], // resolved by PolicyInventoryService.enrichWithScopeTags
     roleScopeTagIds: raw.roleScopeTagIds ?? [],
     assignments: mapAssignments(assignments),
     targetingModel: TargetingModel.Unknown, // resolved by service layer after assignments are known

@@ -28,8 +28,18 @@ function getClient(): PrismaClient {
       _client = new PrismaClient({ adapter: new PrismaD1(env.DB) });
       return _client;
     }
-  } catch {
-    // Not running inside a CF Worker (local dev) — fall through.
+    // CF Worker runtime is present but DB binding is missing — this means
+    // wrangler.toml [[d1_databases]] is not set or the binding name is wrong.
+    // Throw immediately rather than silently falling through to a broken path.
+    if (env !== undefined) {
+      throw new Error(
+        "Cloudflare D1 binding \"DB\" not found. Check [[d1_databases]] in wrangler.toml."
+      );
+    }
+  } catch (err) {
+    // Only re-throw binding-misconfiguration errors; swallow the
+    // \"not a CF Worker\" error that occurs during local development.
+    if (err instanceof Error && err.message.includes("D1 binding")) throw err;
   }
 
   // ---------- Local development (SQLite file via DATABASE_URL) ----------

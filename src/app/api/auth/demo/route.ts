@@ -10,7 +10,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export async function POST() {
+export async function POST(request: Request) {
   if (process.env.NEXT_PUBLIC_ENABLE_MOCK !== "true") {
     return NextResponse.json({ error: "Demo mode is not enabled" }, { status: 403 });
   }
@@ -23,17 +23,11 @@ export async function POST() {
     // Session cookie (no maxAge) — cleared when browser closes
   });
 
-  return NextResponse.redirect(
-    new URL("/dashboard", process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
-    { status: 303 },
-  );
+  return NextResponse.redirect(new URL("/dashboard", request.url), { status: 303 });
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   const cookieStore = await cookies();
   cookieStore.delete("ismc_demo_mode");
-  return NextResponse.redirect(
-    new URL("/login", process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
-    { status: 303 },
-  );
+  return NextResponse.redirect(new URL("/login", request.url), { status: 303 });
 }

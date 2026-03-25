@@ -16,9 +16,9 @@ const ListQuerySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession(request);
 
-  if (!session?.accessToken) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

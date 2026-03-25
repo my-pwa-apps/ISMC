@@ -10,6 +10,7 @@ import type { DashboardStats, PolicyObject, ScopeTag } from "@/domain/models";
 import type { PolicyListQuery } from "@/lib/validation/schemas";
 import { Platform, PolicyType, TargetingModel, AssignmentTargetType } from "@/domain/enums";
 import { isStale, groupBy } from "@/lib/utils";
+import { PolicyNotFoundError } from "@/lib/errors";
 import logger from "@/lib/logger";
 
 export class PolicyInventoryService {
@@ -65,7 +66,7 @@ export class PolicyInventoryService {
       }
     }
 
-    return this.resolveTargetingModels(policies);
+    return this.enrichWithScopeTags(this.resolveTargetingModels(policies));
   }
 
   /**
@@ -75,7 +76,7 @@ export class PolicyInventoryService {
     const repo = this.getRepositoryForType(type);
     if (!repo) return [];
     const policies = await repo.listPolicies(query);
-    return this.resolveTargetingModels(policies);
+    return this.enrichWithScopeTags(this.resolveTargetingModels(policies));
   }
 
   /**
@@ -118,7 +119,7 @@ export class PolicyInventoryService {
       }
     }
 
-    throw new Error(`Policy not found: ${id}`);
+    throw new PolicyNotFoundError(id);
   }
 
   // ============================================================

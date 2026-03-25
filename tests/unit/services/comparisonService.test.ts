@@ -18,18 +18,16 @@ describe("ComparisonService", () => {
     const [first] = await inventoryService.listAll();
     if (!first) return;
 
-    const result = await comparisonService.compare([first.id, first.id]);
-    expect(result.policies.length).toBe(2);
-    const nonMatches = result.settingComparisons.filter(
+    // compare() takes PolicyObject[] — pass the full object, not just the ID
+    const result = comparisonService.compare([first, first]);
+    expect(result.policyIds.length).toBe(2);
+    const nonMatches = result.entries.filter(
       (e) => e.status !== SettingComparisonStatus.Match
     );
     expect(nonMatches.length).toBe(0);
   });
 
-  it("throws when fewer than 2 ids provided", async () => {
-    const [first] = await inventoryService.listAll();
-    await expect(
-      comparisonService.compare([first!.id])
-    ).rejects.toThrow();
+  it("throws when fewer than 2 policies provided", () => {
+    expect(() => comparisonService.compare([])).toThrow();
   });
 });

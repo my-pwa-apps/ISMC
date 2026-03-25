@@ -3,15 +3,15 @@
  * Returns tenant and permission diagnostics.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
 import { annotatePermissions } from "@/lib/auth/permissions";
 import type { TenantDiagnostics } from "@/domain/models";
 
-export async function GET() {
-  const session = await getServerSession();
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(request);
 
-  if (!session?.accessToken) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

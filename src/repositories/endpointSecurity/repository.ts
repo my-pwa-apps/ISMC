@@ -52,7 +52,7 @@ function mapIntentPolicy(
     createdDateTime: raw.lastModifiedDateTime, // intents don't expose createdDateTime
     lastModifiedDateTime: raw.lastModifiedDateTime,
     settingCount: 0, // populated after fetching settings
-    scopeTags: (raw.roleScopeTagIds ?? []).map((id) => ({ id, displayName: id })),
+    scopeTags: [], // resolved by PolicyInventoryService.enrichWithScopeTags
     roleScopeTagIds: raw.roleScopeTagIds ?? [],
     assignments: mapAssignments(assignments),
     targetingModel: TargetingModel.Device,

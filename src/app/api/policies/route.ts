@@ -14,9 +14,9 @@ import logger from "@/lib/logger";
 import { ZodError } from "zod";
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession(request);
 
-  if (!session?.accessToken) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const query = PolicyListQuerySchema.parse(rawQuery);
 
     const correlationId = request.headers.get("x-correlation-id") ??
-      Math.random().toString(36).slice(2);
+      crypto.randomUUID();
 
     const registry = createRepositoryRegistry(
       session.accessToken,

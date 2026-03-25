@@ -13,9 +13,9 @@ import logger from "@/lib/logger";
 import { ZodError } from "zod";
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession(request);
 
-  if (!session?.accessToken) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
