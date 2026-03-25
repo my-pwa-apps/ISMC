@@ -24,9 +24,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "policyId is required" }, { status: 400 });
   }
 
-  const service = new SnapshotService();
-  const snapshots = await service.listSnapshots(policyId);
-  return NextResponse.json({ data: snapshots });
+  try {
+    const service = new SnapshotService();
+    const snapshots = await service.listSnapshots(policyId);
+    return NextResponse.json({ data: snapshots });
+  } catch (err) {
+    logger.error({ err }, "GET /api/snapshots failed");
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {

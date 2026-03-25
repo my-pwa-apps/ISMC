@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { createClient } from "@libsql/client/http";
+import { PrismaLibSQL } from "@prisma/adapter-libsql";
 import logger from "@/lib/logger";
 
 declare global {
@@ -9,6 +11,18 @@ declare global {
 }
 
 function createPrismaClient(): PrismaClient {
+  // Use Turso/libSQL over HTTP when TURSO_DATABASE_URL is set.
+  // Required for Cloudflare Pages/Workers (no local filesystem access).
+  if (process.env.TURSO_DATABASE_URL) {
+    const libsql = createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+    const adapter = new PrismaLibSQL(libsql);
+    return new PrismaClient({ adapter });
+  }
+
+  // Local development: standard Prisma client using DATABASE_URL (SQLite file).
   return new PrismaClient({
     log: [
       { level: "query", emit: "event" },
