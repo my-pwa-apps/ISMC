@@ -1,0 +1,10 @@
+name = "ismc"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+[vars]
+# Non-secret environment variables can go here.
+# Secrets (AUTH_SECRET, AUTH_ENTRA_CLIENT_SECRET, etc.) must be set
+# in the Cloudflare Pages dashboard under Settings > Environment Variables.
+NEXT_PUBLIC_ENABLE_MOCK = "false"

@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+// Enable Cloudflare bindings in local development when using `next-on-pages`
+// No-op in production builds and when not using `npx @cloudflare/next-on-pages`.
+if (process.env.NODE_ENV === "development") {
+  const { setupDevPlatform } = await import("@cloudflare/next-on-pages/next-dev");
+  await setupDevPlatform();
+}
+
 const nextConfig: NextConfig = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,

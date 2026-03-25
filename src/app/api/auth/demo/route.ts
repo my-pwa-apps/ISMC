@@ -10,8 +10,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
-
 export async function POST() {
   if (process.env.NEXT_PUBLIC_ENABLE_MOCK !== "true") {
     return NextResponse.json({ error: "Demo mode is not enabled" }, { status: 403 });

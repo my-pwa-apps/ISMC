@@ -10,8 +10,6 @@
 
 import NextAuth from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import db from "@/lib/db/client";
 import logger from "@/lib/logger";
 import type { NextAuthConfig } from "next-auth";
 
@@ -31,10 +29,7 @@ const GRAPH_SCOPES = [
 ].join(" ");
 
 export const authConfig: NextAuthConfig = {
-  // Use Prisma adapter only on the server; the JWT strategy is used
-  // to avoid database reads on every API request.
-  adapter: PrismaAdapter(db),
-
+  // JWT strategy — no database adapter needed; tokens stored in encrypted cookies.
   // Use JWT so we can embed the access token for server-side Graph calls.
   session: {
     strategy: "jwt",
@@ -116,6 +111,9 @@ export const authConfig: NextAuthConfig = {
 };
 
 // Augment Auth.js types
+// The empty import anchors @auth/core in the TS compilation graph so the
+// declare module augmentation below can resolve it.
+import type {} from "@auth/core/jwt";
 declare module "next-auth" {
   interface Session {
     accessToken?: string;
