@@ -3,9 +3,11 @@
 import { type PolicyObject } from "@/domain/models";
 import { AssignmentTargetType } from "@/domain/enums";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { AssignmentBadge } from "@/components/shared/assignment-badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users2Icon, MonitorIcon, GroupIcon } from "lucide-react";
+import { Users2Icon, MonitorIcon, GroupIcon, MinusCircleIcon, FilterIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AssignmentsTabProps {
   policy: PolicyObject;
@@ -31,9 +33,10 @@ export function AssignmentsTab({ policy }: AssignmentsTabProps) {
     (a) => a.target.type === AssignmentTargetType.AllUsers
   );
   const groups = assignments.filter(
-    (a) =>
-      a.target.type === AssignmentTargetType.Group ||
-      a.target.type === AssignmentTargetType.ExcludeGroup
+    (a) => a.target.type === AssignmentTargetType.Group
+  );
+  const excluded = assignments.filter(
+    (a) => a.target.type === AssignmentTargetType.ExcludeGroup
   );
 
   return (
@@ -82,7 +85,46 @@ export function AssignmentsTab({ policy }: AssignmentsTabProps) {
                   <span className="text-sm font-medium">
                     {a.target.groupDisplayName ?? a.target.groupId ?? "Unknown group"}
                   </span>
-                  <AssignmentBadge assignment={a} />
+                  <div className="flex items-center gap-1.5">
+                    {a.target.filter && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 cursor-help">
+                            <FilterIcon className="w-3 h-3" />
+                            {a.target.filter.displayName}
+                          </span>
+                        </TooltipTrigger>
+                        {a.target.filter.rule && (
+                          <TooltipContent side="left" className="max-w-xs font-mono text-xs break-all">
+                            {a.target.filter.rule}
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    )}
+                    <AssignmentBadge assignment={a} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {excluded.length > 0 && (
+        <Card className="border-red-200 dark:border-red-900">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-red-700 dark:text-red-400">
+              <MinusCircleIcon className="w-4 h-4" /> Excluded Groups ({excluded.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {excluded.map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                  <span className="text-sm font-medium line-through text-muted-foreground">
+                    {a.target.groupDisplayName ?? a.target.groupId ?? "Unknown group"}
+                  </span>
+                  <Badge variant="error" className="text-xs">Excluded</Badge>
                 </div>
               ))}
             </div>
@@ -94,18 +136,29 @@ export function AssignmentsTab({ policy }: AssignmentsTabProps) {
         const filtersUsed = assignments
           .map((a) => a.target.filter)
           .filter((f): f is NonNullable<typeof f> => f != null);
-        if (filtersUsed.length === 0) return null;
+        // Deduplicate by ID
+        const uniqueFilters = [...new Map(filtersUsed.map((f) => [f.id, f])).values()];
+        if (uniqueFilters.length === 0) return null;
         return (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Assignment Filters</CardTitle>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <FilterIcon className="w-4 h-4" /> Assignment Filters ({uniqueFilters.length})
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1.5">
-                {filtersUsed.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between py-1 border-b border-border last:border-0">
-                    <span className="text-sm">{f.displayName}</span>
-                    <span className="text-xs text-muted-foreground">{f.platform}</span>
+              <div className="space-y-2">
+                {uniqueFilters.map((f) => (
+                  <div key={f.id} className="py-1.5 border-b border-border last:border-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{f.displayName}</span>
+                      <span className="text-xs text-muted-foreground">{f.platform}</span>
+                    </div>
+                    {f.rule && (
+                      <code className="block mt-1 text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground break-all">
+                        {f.rule}
+                      </code>
+                    )}
                   </div>
                 ))}
               </div>

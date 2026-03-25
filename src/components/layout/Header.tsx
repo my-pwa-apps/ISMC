@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell, Search, User, LogOut, ChevronDown } from "lucide-react";
+import { Bell, Search, User, LogOut, ChevronDown, GitCompare } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useComparisonStore } from "@/features/comparison/store";
 
 interface HeaderProps {
   title?: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export function Header({ title, breadcrumbs }: HeaderProps) {
   const { data: session } = useSession();
+  const { selectedIds } = useComparisonStore();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +85,18 @@ export function Header({ title, breadcrumbs }: HeaderProps) {
             Ctrl K
           </kbd>
         </Link>
+
+        {/* Comparison basket */}
+        {selectedIds.length > 0 && (
+          <Link
+            href={`/compare?ids=${selectedIds.join(",")}`}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded hover:bg-brand-100 transition-colors mr-2"
+            title="Open comparison"
+          >
+            <GitCompare className="w-3.5 h-3.5" />
+            <span>{selectedIds.length}</span>
+          </Link>
+        )}
 
         {/* User menu */}
         <div className="relative" ref={menuRef}>

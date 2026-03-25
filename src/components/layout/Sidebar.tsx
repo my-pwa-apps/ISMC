@@ -36,6 +36,8 @@ interface NavLeaf {
   label: string;
   href: string;
   icon?: React.ElementType;
+  /** Mark as not yet built — renders as disabled with "Soon" badge */
+  soon?: boolean;
 }
 
 interface NavGroup {
@@ -112,9 +114,9 @@ const NAV_TREE: NavItem[] = [
         kind: "group",
         label: "Assignment Scopes",
         children: [
-          { kind: "leaf", label: "By Group", href: `/explorer/by-group` },
-          { kind: "leaf", label: "By Scope Tag", href: `/explorer/by-scope-tag` },
-          { kind: "leaf", label: "Assignment Filters", href: `/explorer/filters` },
+          { kind: "leaf", label: "By Group", href: `/explorer/by-group`, soon: true },
+          { kind: "leaf", label: "By Scope Tag", href: `/explorer/by-scope-tag`, soon: true },
+          { kind: "leaf", label: "Assignment Filters", href: `/explorer/filters`, soon: true },
         ],
       },
     ],
@@ -151,9 +153,9 @@ const NAV_TREE: NavItem[] = [
     icon: Import,
     children: [
       { kind: "leaf", label: "Migration Workspace", href: "/migration" },
-      { kind: "leaf", label: "Import GPO Analysis", href: "/migration/import" },
-      { kind: "leaf", label: "Readiness Dashboard", href: "/migration/readiness" },
-      { kind: "leaf", label: "Setting Mappings", href: "/migration/mappings" },
+      { kind: "leaf", label: "Import GPO Analysis", href: "/migration/import", soon: true },
+      { kind: "leaf", label: "Readiness Dashboard", href: "/migration/readiness", soon: true },
+      { kind: "leaf", label: "Setting Mappings", href: "/migration/mappings", soon: true },
     ],
   },
   {
@@ -167,8 +169,8 @@ const NAV_TREE: NavItem[] = [
     label: "Settings",
     icon: Cog,
     children: [
-      { kind: "leaf", label: "Tenant Diagnostics", href: "/settings/diagnostics" },
-      { kind: "leaf", label: "Permissions", href: "/settings/permissions" },
+      { kind: "leaf", label: "Tenant Diagnostics", href: "/diagnostics" },
+      { kind: "leaf", label: "Permissions", href: "/settings/permissions", soon: true },
     ],
   },
 ];
@@ -218,6 +220,23 @@ function NavItemComponent({ item, depth }: { item: NavItem; depth: number }) {
   if (item.kind === "leaf") {
     const Icon = item.icon;
     const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+
+    if (item.soon) {
+      return (
+        <span
+          className={cn(
+            "sidebar-nav-item opacity-50 cursor-not-allowed select-none",
+            depth > 0 && "text-xs"
+          )}
+          style={{ paddingLeft: `${(depth * 12) + 12}px` }}
+          title="Coming soon"
+        >
+          {Icon && <Icon className="w-3.5 h-3.5 flex-shrink-0 opacity-80" />}
+          <span className="flex-1 truncate">{item.label}</span>
+          <span className="ml-auto text-2xs bg-sidebar-border text-sidebar-muted px-1 rounded">Soon</span>
+        </span>
+      );
+    }
 
     return (
       <Link

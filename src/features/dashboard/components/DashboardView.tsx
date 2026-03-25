@@ -12,6 +12,7 @@ import {
 import { useDashboardStats } from "@/features/dashboard/hooks";
 import { KpiCard, KpiGridSkeleton } from "./KpiCard";
 import { RecentPolicies } from "./RecentPolicies";
+import { getPolicyTypeLabel } from "@/lib/utils";
 
 export function DashboardView() {
   const { data: stats, isLoading, error } = useDashboardStats();
@@ -68,12 +69,13 @@ export function DashboardView() {
             highlight={stats?.conflictCount ? "error" : undefined}
           />
           <KpiCard
-            title="Migration Ready"
+            title="Active Rate"
             value={
               stats?.totalPolicies
                 ? `${Math.round(((stats.totalPolicies - (stats.staleCount ?? 0)) / stats.totalPolicies) * 100)}%`
                 : "—"
             }
+            description="Non-stale policies"
             icon={<LayoutDashboard className="w-5 h-5" />}
           />
         </div>
@@ -94,7 +96,7 @@ export function DashboardView() {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-sm"
                 >
                   <span className="font-medium">{count}</span>
-                  <span className="text-muted-foreground">{type}</span>
+                  <span className="text-muted-foreground">{getPolicyTypeLabel(type)}</span>
                 </div>
               ))}
           </div>

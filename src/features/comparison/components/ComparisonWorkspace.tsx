@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useComparisonStore } from "@/features/comparison/store";
 import { useComparison } from "@/features/comparison/hooks";
 import { usePolicies } from "@/features/explorer/hooks";
@@ -14,10 +15,35 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { XIcon, PlusCircleIcon, GitCompareIcon } from "lucide-react";
 
 export function ComparisonWorkspace() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { selectedIds, addPolicy, removePolicy, clearPolicies } = useComparisonStore();
   const [search, setSearch] = useState("");
   const { data: policyData, isLoading: policiesLoading } = usePolicies({ search: search || undefined }, 1, 50);
   const { data: result, isLoading: comparing, error } = useComparison(selectedIds);
+
+  // Initialise from URL on first mount
+  useEffect(() => {
+    const urlIds = searchParams.get("ids");
+    if (urlIds) {
+      const ids = urlIds.split(",").filter(Boolean).slice(0, 5);
+      clearPolicies();
+      ids.forEach((id) => addPolicy(id));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep URL in sync whenever selection changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (selectedIds.length > 0) {
+      params.set("ids", selectedIds.join(","));
+    } else {
+      params.delete("ids");
+    }
+    router.replace(`/compare?${params.toString()}`, { scroll: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds]);
 
   return (
     <div className="space-y-6">
