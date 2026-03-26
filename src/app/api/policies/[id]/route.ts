@@ -58,14 +58,21 @@ export async function GET(
       registry.assignmentFilters
     );
 
-    await new AuditService().log({
-      tenantId: tenantSession.tenantId,
-      actorId: tenantSession.sub,
-      action: AuditAction.PolicyViewed,
-      entityType: "Policy",
-      entityId: id,
-      entityName: policyWithResolvedAssignments.displayName,
-    });
+    try {
+      await new AuditService().log({
+        tenantId: tenantSession.tenantId,
+        actorId: tenantSession.sub,
+        action: AuditAction.PolicyViewed,
+        entityType: "Policy",
+        entityId: id,
+        entityName: policyWithResolvedAssignments.displayName,
+      });
+    } catch (auditErr) {
+      logger.error(
+        { auditErr, policyId: id, tenantId: tenantSession.tenantId },
+        "Failed to record policy view audit entry"
+      );
+    }
 
     return NextResponse.json({ data: policyWithResolvedAssignments });
   } catch (err) {
