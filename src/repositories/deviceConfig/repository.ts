@@ -12,9 +12,22 @@ import { ENDPOINTS } from "@/lib/graph/endpoints";
 import { mapWithConcurrency } from "@/lib/utils";
 import { mapDeviceConfiguration } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { mapRawPolicySettings } from "../shared/rawPolicySettings";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
+import { SettingSource } from "@/domain/enums";
 import logger from "@/lib/logger";
+
+const DEVICE_CONFIGURATION_SETTING_SKIP_KEYS = new Set([
+  "id",
+  "displayName",
+  "description",
+  "createdDateTime",
+  "lastModifiedDateTime",
+  "version",
+  "roleScopeTagIds",
+  "@odata.type",
+]);
 
 export class DeviceConfigRepository implements PolicyRepository {
   constructor(
@@ -53,8 +66,20 @@ export class DeviceConfigRepository implements PolicyRepository {
   }
 
   async getPolicyWithSettings(id: string): Promise<PolicyObject> {
-    // Classic device configs expose all settings on the main resource object
-    return this.getPolicy(id);
+    const [raw, assignments] = await Promise.all([
+      this.client.get<GraphDeviceConfiguration>(ENDPOINTS.DEVICE_CONFIGS.get(id), "v1.0"),
+      this.client.getAll<GraphAssignment>(ENDPOINTS.DEVICE_CONFIGS.assignments(id), "v1.0"),
+    ]);
+    const settings = mapRawPolicySettings(raw, {
+      skipKeys: DEVICE_CONFIGURATION_SETTING_SKIP_KEYS,
+      source: SettingSource.CSP,
+    });
+
+    return {
+      ...mapDeviceConfiguration(raw, this.tenantId, assignments),
+      settingCount: settings.length,
+      settings,
+    };
   }
 
   async getAssignments(policyId: string): Promise<PolicyAssignment[]> {

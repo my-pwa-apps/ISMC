@@ -10,11 +10,24 @@ import type { GraphClient } from "@/lib/graph/client";
 import type { GraphDeviceCompliancePolicy, GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
 import { mapWithConcurrency } from "@/lib/utils";
-import { Platform, PolicyStatus, PolicyType, TargetingModel } from "@/domain/enums";
+import { Platform, PolicyStatus, PolicyType, SettingSource, TargetingModel } from "@/domain/enums";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
+import { mapRawPolicySettings } from "../shared/rawPolicySettings";
 import logger from "@/lib/logger";
+
+const COMPLIANCE_SETTING_SKIP_KEYS = new Set([
+  "id",
+  "displayName",
+  "description",
+  "createdDateTime",
+  "lastModifiedDateTime",
+  "version",
+  "roleScopeTagIds",
+  "@odata.type",
+  "scheduledActionsForRule",
+]);
 
 function mapCompliancePlatform(odataType: string): Platform {
   const t = odataType.toLowerCase();
@@ -31,13 +44,8 @@ function mapCompliancePolicy(
   tenantId: string,
   assignments: GraphAssignment[] = []
 ): PolicyObject {
-  const skipKeys = new Set([
-    "id", "displayName", "description", "createdDateTime",
-    "lastModifiedDateTime", "version", "roleScopeTagIds", "@odata.type",
-    "scheduledActionsForRule",
-  ]);
   const settingCount = Object.keys(raw).filter(
-    (k) => !skipKeys.has(k) && raw[k] !== null && raw[k] !== undefined
+    (k) => !COMPLIANCE_SETTING_SKIP_KEYS.has(k) && raw[k] !== null && raw[k] !== undefined
   ).length;
 
   return {
@@ -97,7 +105,20 @@ export class ComplianceRepository implements PolicyRepository {
   }
 
   async getPolicyWithSettings(id: string): Promise<PolicyObject> {
-    return this.getPolicy(id);
+    const [raw, assignments] = await Promise.all([
+      this.client.get<GraphDeviceCompliancePolicy>(ENDPOINTS.COMPLIANCE.get(id), "v1.0"),
+      this.client.getAll<GraphAssignment>(ENDPOINTS.COMPLIANCE.assignments(id), "v1.0"),
+    ]);
+    const settings = mapRawPolicySettings(raw, {
+      skipKeys: COMPLIANCE_SETTING_SKIP_KEYS,
+      source: SettingSource.CSP,
+    });
+
+    return {
+      ...mapCompliancePolicy(raw, this.tenantId, assignments),
+      settingCount: settings.length,
+      settings,
+    };
   }
 
   async getAssignments(policyId: string): Promise<PolicyAssignment[]> {
