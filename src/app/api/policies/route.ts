@@ -6,14 +6,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/serverSession";
+import { toRouteErrorResponse } from "@/lib/api/routeErrorResponse";
+import { getServerSession, requireTenantSession } from "@/lib/auth/serverSession";
 import { createRepositoryRegistry } from "@/repositories/factory";
 import { PolicyInventoryService } from "@/services/policyInventoryService";
 import { PolicyListQuerySchema } from "@/lib/validation/schemas";
-import { InvalidCursorError, paginateItems } from "@/lib/pagination";
+import { paginateItems } from "@/lib/pagination";
 import { type PolicyObject } from "@/domain/models";
 import logger from "@/lib/logger";
-import { ZodError } from "zod";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(request);
@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const tenantSession = requireTenantSession(session);
 
   try {
     const { searchParams } = request.nextUrl;
@@ -31,9 +33,10 @@ export async function GET(request: NextRequest) {
       crypto.randomUUID();
 
     const registry = createRepositoryRegistry(
-      session.accessToken,
-      session.tenantId ?? "",
-      correlationId
+      tenantSession.accessToken,
+      tenantSession.tenantId,
+      correlationId,
+      tenantSession.isDemoMode
     );
     const service = new PolicyInventoryService(registry);
 
@@ -53,14 +56,8 @@ export async function GET(request: NextRequest) {
       meta: page.meta,
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return NextResponse.json({ error: "Invalid query", details: err.flatten() }, { status: 400 });
-    }
-    if (err instanceof InvalidCursorError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
-    }
     logger.error({ err }, "GET /api/policies failed");
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return toRouteErrorResponse(err, "Invalid query");
   }
 }
 

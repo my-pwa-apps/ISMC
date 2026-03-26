@@ -21,10 +21,6 @@ import { ScopeTagRepo } from "./scopeTags/repository";
 import { ScriptRepository } from "./scripts/repository";
 import { createGraphClient } from "@/lib/graph/client";
 
-function isMockMode(): boolean {
-  return process.env.NEXT_PUBLIC_ENABLE_MOCK === "true";
-}
-
 /**
  * Create a full registry of repositories.
  *
@@ -38,9 +34,10 @@ function isMockMode(): boolean {
 export function createRepositoryRegistry(
   accessToken: string,
   tenantId: string,
-  correlationId?: string
+  correlationId?: string,
+  useMockRegistry = false
 ): RepositoryRegistry {
-  if (isMockMode()) {
+  if (useMockRegistry) {
     return getMockRegistry();
   }
 

@@ -10,6 +10,7 @@ import db from "@/lib/db/client";
 import type { PolicyObject, PolicySnapshot } from "@/domain/models";
 import type { PolicyType } from "@/domain/enums";
 import logger from "@/lib/logger";
+import { safeJsonParse } from "@/lib/utils";
 
 export class SnapshotService {
   /**
@@ -46,9 +47,9 @@ export class SnapshotService {
   /**
    * List all snapshots for a policy, newest first.
    */
-  async listSnapshots(policyId: string): Promise<PolicySnapshot[]> {
+  async listSnapshots(policyId: string, tenantId: string): Promise<PolicySnapshot[]> {
     const records = await db.policySnapshot.findMany({
-      where: { policyId },
+      where: { policyId, tenantId },
       orderBy: { createdAt: "desc" },
     });
     return records.map(toSnapshot);
@@ -57,9 +58,9 @@ export class SnapshotService {
   /**
    * Get a specific snapshot.
    */
-  async getSnapshot(snapshotId: string): Promise<PolicySnapshot> {
-    const record = await db.policySnapshot.findUniqueOrThrow({
-      where: { id: snapshotId },
+  async getSnapshot(snapshotId: string, tenantId: string): Promise<PolicySnapshot> {
+    const record = await db.policySnapshot.findFirstOrThrow({
+      where: { id: snapshotId, tenantId },
     });
     return toSnapshot(record);
   }
@@ -79,8 +80,8 @@ export class SnapshotService {
   /**
    * Delete a snapshot.
    */
-  async deleteSnapshot(snapshotId: string): Promise<void> {
-    await db.policySnapshot.delete({ where: { id: snapshotId } });
+  async deleteSnapshot(snapshotId: string, tenantId: string): Promise<void> {
+    await db.policySnapshot.deleteMany({ where: { id: snapshotId, tenantId } });
   }
 }
 
@@ -102,13 +103,19 @@ interface SnapshotRecord {
 }
 
 function toSnapshot(record: SnapshotRecord): PolicySnapshot {
+  const snapshotData = safeJsonParse<PolicyObject>(record.snapshotData);
+
+  if (!snapshotData) {
+    throw new Error(`Snapshot payload is corrupted: ${record.id}`);
+  }
+
   return {
     id: record.id,
     policyId: record.policyId,
     policyType: record.policyType as PolicyType,
     displayName: record.displayName,
     tenantId: record.tenantId,
-    snapshotData: JSON.parse(record.snapshotData) as PolicyObject,
+    snapshotData,
     note: record.note ?? undefined,
     createdAt: record.createdAt.toISOString(),
     createdById: record.createdById ?? undefined,

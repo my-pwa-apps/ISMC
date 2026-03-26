@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/serverSession";
+import { getServerSession, requireTenantSession } from "@/lib/auth/serverSession";
+import { toRouteErrorResponse } from "@/lib/api/routeErrorResponse";
 import { createRepositoryRegistry } from "@/repositories/factory";
 import { PolicyInventoryService } from "@/services/policyInventoryService";
 import { AuditService } from "@/services/auditService";
-import { PolicyNotFoundError } from "@/lib/errors";
 import { AuditAction, PolicyType } from "@/domain/enums";
 import logger from "@/lib/logger";
 import { z } from "zod";
@@ -25,6 +25,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const tenantSession = requireTenantSession(session);
+
   const { id } = await params;
 
   if (!UUID_RE.test(id)) {
@@ -36,28 +38,28 @@ export async function GET(
     const query = QuerySchema.parse(Object.fromEntries(searchParams.entries()));
 
     const registry = createRepositoryRegistry(
-      session.accessToken,
-      session.tenantId ?? ""
+      tenantSession.accessToken,
+      tenantSession.tenantId,
+      undefined,
+      tenantSession.isDemoMode
     );
     const service = new PolicyInventoryService(registry);
-    const policy = await service.getPolicy(id, query.policyType);
+    const policy = query.withSettings
+      ? await service.getPolicy(id, query.policyType)
+      : await service.getPolicySummary(id, query.policyType);
 
-    // Fire-and-forget audit log with actor identity
-    new AuditService().log({
-      tenantId: session.tenantId ?? "",
-      actorId: session.sub,
+    await new AuditService().log({
+      tenantId: tenantSession.tenantId,
+      actorId: tenantSession.sub,
       action: AuditAction.PolicyViewed,
       entityType: "Policy",
       entityId: id,
       entityName: policy.displayName,
-    }).catch(() => {});
+    });
 
     return NextResponse.json({ data: policy });
   } catch (err) {
-    if (err instanceof PolicyNotFoundError) {
-      return NextResponse.json({ error: err.message }, { status: 404 });
-    }
     logger.error({ err, policyId: id }, "GET /api/policies/[id] failed");
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return toRouteErrorResponse(err, "Invalid query");
   }
 }

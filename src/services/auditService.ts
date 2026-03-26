@@ -8,6 +8,7 @@ import db from "@/lib/db/client";
 import type { AuditRecord } from "@/domain/models";
 import type { AuditAction } from "@/domain/enums";
 import logger from "@/lib/logger";
+import { safeJsonParse } from "@/lib/utils";
 
 export interface LogAuditParams {
   tenantId: string;
@@ -23,24 +24,19 @@ export interface LogAuditParams {
 
 export class AuditService {
   async log(params: LogAuditParams): Promise<void> {
-    try {
-      await db.auditEntry.create({
-        data: {
-          tenantId: params.tenantId,
-          actorId: params.actorId ?? null,
-          action: params.action,
-          entityType: params.entityType,
-          entityId: params.entityId,
-          entityName: params.entityName ?? null,
-          details: params.details ? JSON.stringify(params.details) : null,
-          ipAddress: params.ipAddress ?? null,
-          userAgent: params.userAgent ?? null,
-        },
-      });
-    } catch (err) {
-      // Audit logging must not break the primary request
-      logger.error({ err, params }, "Failed to write audit entry");
-    }
+    await db.auditEntry.create({
+      data: {
+        tenantId: params.tenantId,
+        actorId: params.actorId ?? null,
+        action: params.action,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        entityName: params.entityName ?? null,
+        details: params.details ? JSON.stringify(params.details) : null,
+        ipAddress: params.ipAddress ?? null,
+        userAgent: params.userAgent ?? null,
+      },
+    });
   }
 
   async list(
@@ -81,7 +77,7 @@ export class AuditService {
         entityType: r.entityType,
         entityId: r.entityId,
         entityName: r.entityName ?? undefined,
-        details: r.details ? (JSON.parse(r.details) as Record<string, unknown>) : undefined,
+        details: r.details ? safeJsonParse<Record<string, unknown>>(r.details) ?? undefined : undefined,
         ipAddress: r.ipAddress ?? undefined,
         createdAt: r.createdAt.toISOString(),
       })),

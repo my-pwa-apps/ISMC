@@ -2,10 +2,9 @@ import { SessionProvider } from "next-auth/react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { auth } from "@/lib/auth/config";
+import { isDemoModeCookieEnabled, isServerDemoModeEnabled } from "@/lib/runtime/demoMode";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-
-const isMockMode = process.env.NEXT_PUBLIC_ENABLE_MOCK === "true";
 
 export default async function AppLayout({
   children,
@@ -13,10 +12,11 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
-  const demoMode = cookieStore.get("ismc_demo_mode")?.value === "1";
+  const demoMode = isDemoModeCookieEnabled(cookieStore.get("ismc_demo_mode")?.value);
+  const demoModeEnabled = isServerDemoModeEnabled();
 
   let session = null;
-  if (!isMockMode && !demoMode) {
+  if (!(demoModeEnabled && demoMode)) {
     session = await auth();
     if (!session) {
       redirect("/login");

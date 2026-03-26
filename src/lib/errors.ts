@@ -12,6 +12,13 @@ export class PolicyNotFoundError extends Error {
   }
 }
 
+export class MissingTenantContextError extends Error {
+  constructor() {
+    super("Tenant context is missing from the authenticated session");
+    this.name = "MissingTenantContextError";
+  }
+}
+
 export class GraphThrottleError extends Error {
   constructor(
     public readonly retryAfterSeconds: number,

@@ -4,14 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/serverSession";
+import { toRouteErrorResponse } from "@/lib/api/routeErrorResponse";
+import { getServerSession, requireTenantSession } from "@/lib/auth/serverSession";
 import { createRepositoryRegistry } from "@/repositories/factory";
 import { PolicyInventoryService } from "@/services/policyInventoryService";
 import { SearchService } from "@/services/searchService";
 import { SearchQuerySchema } from "@/lib/validation/schemas";
-import { InvalidCursorError, paginateItems } from "@/lib/pagination";
+import { paginateItems } from "@/lib/pagination";
 import logger from "@/lib/logger";
-import { ZodError } from "zod";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(request);
@@ -20,14 +20,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const tenantSession = requireTenantSession(session);
+
   try {
     const startedAt = Date.now();
     const body = await request.json();
     const query = SearchQuerySchema.parse(body);
 
     const registry = createRepositoryRegistry(
-      session.accessToken,
-      session.tenantId ?? ""
+      tenantSession.accessToken,
+      tenantSession.tenantId,
+      undefined,
+      tenantSession.isDemoMode
     );
     const inventory = new PolicyInventoryService(registry);
     const searcher = new SearchService();
@@ -49,14 +53,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      return NextResponse.json({ error: "Invalid search query", details: err.flatten() }, { status: 400 });
-    }
-    if (err instanceof InvalidCursorError) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
-    }
     logger.error({ err }, "POST /api/search failed");
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return toRouteErrorResponse(err, "Invalid search query");
   }
 }
 

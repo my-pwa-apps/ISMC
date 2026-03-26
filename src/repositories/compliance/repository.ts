@@ -13,6 +13,7 @@ import { mapWithConcurrency } from "@/lib/utils";
 import { Platform, PolicyStatus, PolicyType, TargetingModel } from "@/domain/enums";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import logger from "@/lib/logger";
 
 function mapCompliancePlatform(odataType: string): Platform {
@@ -68,7 +69,7 @@ export class ComplianceRepository implements PolicyRepository {
 
   async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ repository: "Compliance", method: "listPolicies" });
-    const params = new URLSearchParams({ $top: String(query?.pageSize ?? 100) });
+    const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.COMPLIANCE.list}?${params}`;
     const raw = await this.client.getAll<GraphDeviceCompliancePolicy>(path, "v1.0");
 

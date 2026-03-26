@@ -21,6 +21,7 @@ import { mapWithConcurrency } from "@/lib/utils";
 import { mapConfigurationPolicy, mapConfigurationPolicySettings } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import logger from "@/lib/logger";
 
 export class SettingsCatalogRepository implements PolicyRepository {
@@ -127,7 +128,7 @@ export class SettingsCatalogRepository implements PolicyRepository {
 function buildListUrl(query?: Partial<PolicyListQuery>): string {
   const base = ENDPOINTS.SETTINGS_CATALOG.list;
   const params = new URLSearchParams();
-  params.set("$top", String(query?.pageSize ?? 100));
+  params.set("$top", String(getGraphFetchPageSize()));
 
   // TODO: add $filter for platform when Graph supports it consistently
   if (query?.search) {

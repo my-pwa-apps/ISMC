@@ -15,6 +15,7 @@ import { Platform, PolicyStatus, PolicyType, TargetingModel } from "@/domain/enu
 import { mapWithConcurrency } from "@/lib/utils";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 
 interface GraphScript {
   id: string;
@@ -79,7 +80,7 @@ export class ScriptRepository implements PolicyRepository {
   }
 
   async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
-    const params = new URLSearchParams({ $top: String(query?.pageSize ?? 100) });
+    const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${this.listPath}?${params}`;
     const raw = await this.client.getAll<GraphScript>(path, "beta");
     const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {

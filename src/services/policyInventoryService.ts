@@ -122,6 +122,33 @@ export class PolicyInventoryService {
     throw new PolicyNotFoundError(id);
   }
 
+  async getPolicySummary(id: string, type?: PolicyType): Promise<PolicyObject> {
+    if (type) {
+      const repo = this.getRepositoryForType(type);
+      if (repo) return repo.getPolicy(id);
+    }
+
+    const repos = [
+      this.registry.settingsCatalog,
+      this.registry.adminTemplates,
+      this.registry.deviceConfig,
+      this.registry.endpointSecurity,
+      this.registry.securityBaseline,
+      this.registry.compliance,
+      this.registry.scripts,
+    ];
+
+    for (const repo of repos) {
+      try {
+        return await repo.getPolicy(id);
+      } catch {
+        // Not found in this repo — try the next
+      }
+    }
+
+    throw new PolicyNotFoundError(id);
+  }
+
   // ============================================================
   // Scope Tags (resolved)
   // ============================================================

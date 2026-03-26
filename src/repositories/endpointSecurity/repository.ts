@@ -17,6 +17,7 @@ import { Platform, PolicyStatus, PolicyType, SettingDataType, SettingSource, Tar
 import type { PolicySetting } from "@/domain/models";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import logger from "@/lib/logger";
 
 // ============================================================
@@ -97,7 +98,7 @@ export class EndpointSecurityRepository implements PolicyRepository {
 
   async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ repository: "EndpointSecurity", method: "listPolicies" });
-    const params = new URLSearchParams({ $top: String(query?.pageSize ?? 100) });
+    const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.ENDPOINT_SECURITY.list}?${params}`;
     const raw = await this.client.getAll<GraphIntent>(path, "beta");
 

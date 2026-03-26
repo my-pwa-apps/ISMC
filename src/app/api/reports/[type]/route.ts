@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/serverSession";
+import { toRouteErrorResponse } from "@/lib/api/routeErrorResponse";
+import { getServerSession, requireTenantSession } from "@/lib/auth/serverSession";
 import { createRepositoryRegistry } from "@/repositories/factory";
 import { PolicyInventoryService } from "@/services/policyInventoryService";
 import { ReportService } from "@/services/reportService";
@@ -32,6 +33,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const tenantSession = requireTenantSession(session);
+
   const { type } = await params;
 
   if (!VALID_REPORT_TYPES.has(type as ReportType)) {
@@ -40,8 +43,10 @@ export async function GET(
 
   try {
     const registry = createRepositoryRegistry(
-      session.accessToken,
-      session.tenantId ?? ""
+      tenantSession.accessToken,
+      tenantSession.tenantId,
+      undefined,
+      tenantSession.isDemoMode
     );
     const inventory = new PolicyInventoryService(registry);
     const reporter = new ReportService();
@@ -50,12 +55,12 @@ export async function GET(
     const report = await reporter.generateReport(
       type as ReportType,
       policies,
-      session.tenantId ?? ""
+      tenantSession.tenantId
     );
 
     return NextResponse.json({ data: report });
   } catch (err) {
     logger.error({ err, type }, "GET /api/reports/[type] failed");
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return toRouteErrorResponse(err);
   }
 }

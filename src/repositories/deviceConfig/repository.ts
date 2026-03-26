@@ -13,6 +13,7 @@ import { mapWithConcurrency } from "@/lib/utils";
 import { mapDeviceConfiguration } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import logger from "@/lib/logger";
 
 export class DeviceConfigRepository implements PolicyRepository {
@@ -23,7 +24,7 @@ export class DeviceConfigRepository implements PolicyRepository {
 
   async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ repository: "DeviceConfig", method: "listPolicies" });
-    const params = new URLSearchParams({ $top: String(query?.pageSize ?? 100) });
+    const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.DEVICE_CONFIGS.list}?${params}`;
     const raw = await this.client.getAll<GraphDeviceConfiguration>(path, "v1.0");
 

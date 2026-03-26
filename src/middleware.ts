@@ -11,6 +11,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isDemoModeCookieEnabled, isServerDemoModeEnabled } from "@/lib/runtime/demoMode";
 
 const PUBLIC_PATHS_PREFIX = ["/login", "/api/auth", "/_next", "/favicon"];
 
@@ -28,10 +29,11 @@ export function middleware(req: NextRequest) {
   // Allow full bypass when running in mock/demo mode.
   // IMPORTANT: the demo cookie check is deliberately gated behind the same
   // mock-mode flag so it cannot be exploited in production builds.
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCK === "true") {
+  if (isServerDemoModeEnabled()) {
     const demoMode = req.cookies.get("ismc_demo_mode");
-    if (demoMode?.value === "1") return NextResponse.next();
-    return NextResponse.next();
+    if (isDemoModeCookieEnabled(demoMode?.value)) {
+      return NextResponse.next();
+    }
   }
 
   // next-auth v5 beta session cookie name is "authjs.session-token" (dev)

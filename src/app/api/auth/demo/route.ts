@@ -4,14 +4,15 @@
  * Sets a signed demo-mode cookie so the middleware grants access to all
  * app routes without a real Microsoft Entra ID sign-in.
  *
- * Only active when NEXT_PUBLIC_ENABLE_MOCK=true (local dev).
+ * Only active when ISMC_SERVER_DEMO_MODE=true and a public demo UI is enabled.
  */
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { isServerDemoModeEnabled } from "@/lib/runtime/demoMode";
 
 export async function POST(request: Request) {
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCK !== "true") {
+  if (!isServerDemoModeEnabled()) {
     return NextResponse.json({ error: "Demo mode is not enabled" }, { status: 403 });
   }
 

@@ -12,7 +12,9 @@
 
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+import { MissingTenantContextError } from "@/lib/errors";
 import logger from "@/lib/logger";
+import { isDemoModeCookieEnabled, isServerDemoModeEnabled } from "@/lib/runtime/demoMode";
 
 export interface ServerAuth {
   /** Live Microsoft Graph access token — server-side only. */
@@ -23,13 +25,18 @@ export interface ServerAuth {
   sub?: string;
   /** Set when token refresh failed. */
   error?: string;
+  /** Set for explicit demo-mode sessions only. */
+  isDemoMode?: boolean;
 }
+
+export type TenantServerAuth = ServerAuth & { tenantId: string };
 
 const MOCK_AUTH: ServerAuth = {
   accessToken: "mock-access-token",
   tenantId: "00000000-0000-0000-0000-000000000000",
   sub: "demo-user-id",
   error: undefined,
+  isDemoMode: true,
 };
 
 /**
@@ -42,7 +49,10 @@ const MOCK_AUTH: ServerAuth = {
 export async function getServerSession(
   request: NextRequest
 ): Promise<ServerAuth | null> {
-  if (process.env.NEXT_PUBLIC_ENABLE_MOCK === "true") {
+  if (
+    isServerDemoModeEnabled() &&
+    isDemoModeCookieEnabled(request.cookies.get("ismc_demo_mode")?.value)
+  ) {
     return MOCK_AUTH;
   }
 
@@ -70,16 +80,27 @@ export async function getServerSession(
       salt: cookieName, // Auth.js v5: salt must equal cookieName (key derivation)
     });
 
-    if (!token?.accessToken) return null;
+    if (!token?.accessToken || typeof token.tenantId !== "string" || token.tenantId.length === 0) {
+      return null;
+    }
 
     return {
       accessToken: token.accessToken as string,
-      tenantId: token.tenantId as string | undefined,
+      tenantId: token.tenantId,
       sub: token.sub,
       error: token.error as string | undefined,
+      isDemoMode: false,
     };
   } catch {
     // Cookie decode failure (invalid secret, expired, etc.)
     return null;
   }
+}
+
+export function requireTenantSession(session: ServerAuth | null): TenantServerAuth {
+  if (!session?.tenantId) {
+    throw new MissingTenantContextError();
+  }
+
+  return session as TenantServerAuth;
 }

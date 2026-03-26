@@ -21,6 +21,7 @@ import {
 } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import logger from "@/lib/logger";
 
 export class AdminTemplatesRepository implements PolicyRepository {
@@ -32,7 +33,7 @@ export class AdminTemplatesRepository implements PolicyRepository {
   async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ repository: "AdminTemplates", method: "listPolicies" });
 
-    const params = new URLSearchParams({ $top: String(query?.pageSize ?? 100) });
+    const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.ADMIN_TEMPLATES.list}?${params}`;
     const raw = await this.client.getAll<GraphGroupPolicyConfiguration>(path, "beta");
 

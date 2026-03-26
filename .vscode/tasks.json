@@ -4,7 +4,7 @@
 		{
 			"label": "ISMC: Start Dev Server (Mock Mode)",
 			"type": "shell",
-			"command": "$env:NEXT_PUBLIC_ENABLE_MOCK='true'; npm run dev",
+			"command": "$env:NEXT_PUBLIC_ENABLE_MOCK='true'; $env:ISMC_SERVER_DEMO_MODE='true'; npm run dev",
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "build"

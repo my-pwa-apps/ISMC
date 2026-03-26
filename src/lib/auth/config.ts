@@ -145,7 +145,10 @@ declare module "@auth/core/jwt" {
 // ============================================================
 
 async function refreshAccessToken(token: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const tenantId = (token.tenantId as string) ?? process.env.AUTH_ENTRA_TENANT_ID ?? "common";
+  const tenantId = (token.tenantId as string | undefined) ?? process.env.AUTH_ENTRA_TENANT_ID;
+  if (!tenantId) {
+    throw new Error("Missing tenant ID for token refresh");
+  }
   const tokenEndpoint = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 
   const params = new URLSearchParams({
