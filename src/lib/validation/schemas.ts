@@ -80,6 +80,10 @@ export const PolicyCloneSchema = z.object({
   policyType: z.nativeEnum(PolicyType).optional(),
 });
 
+export const WriteModeUpdateSchema = z.object({
+  enabled: z.boolean(),
+});
+
 // ============================================================
 // Note
 // ============================================================
@@ -118,4 +122,5 @@ export type CompareRequest = z.infer<typeof CompareRequestSchema>;
 export type SnapshotCreateInput = z.infer<typeof SnapshotCreateSchema>;
 export type SnapshotRestoreInput = z.infer<typeof SnapshotRestoreSchema>;
 export type PolicyCloneInput = z.infer<typeof PolicyCloneSchema>;
+export type WriteModeUpdateInput = z.infer<typeof WriteModeUpdateSchema>;
 export type NoteCreateInput = z.infer<typeof NoteCreateSchema>;

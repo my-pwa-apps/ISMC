@@ -470,6 +470,7 @@ export interface TenantDiagnostics {
   graphPermissions: PermissionDiagnostic[];
   betaEndpointsAvailable: boolean;
   writeOperationsEnabled: boolean;
+  writeOperationsMutable: boolean;
   environment: string;
   appVersion: string;
   checkedAt: string;

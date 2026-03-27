@@ -55,6 +55,8 @@ To move the app beyond read-only mode and enable policy copy creation plus snaps
 - Grant `DeviceManagementConfiguration.ReadWrite.All`
 - Set `ENABLE_WRITE_OPERATIONS=true`
 
+In local development, the Tenant Diagnostics screen can toggle `ENABLE_WRITE_OPERATIONS` for you and will persist the change into `.env.local`.
+
 Without both of these, the app still supports discovery and snapshot capture, but all policy mutations remain disabled.
 
 ### Setup

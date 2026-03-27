@@ -5,8 +5,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/serverSession";
-import { annotatePermissions } from "@/lib/auth/permissions";
+import { annotatePermissions, isWriteOperationsEnabled } from "@/lib/auth/permissions";
 import type { TenantDiagnostics } from "@/domain/models";
+import { canMutateLocalServerFlags } from "@/lib/runtime/localEnv";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(request);
@@ -39,7 +40,8 @@ export async function GET(request: NextRequest) {
     },
     graphPermissions: permissions,
     betaEndpointsAvailable: true, // we always attempt beta; handle errors at repository level
-    writeOperationsEnabled: process.env.ENABLE_WRITE_OPERATIONS === "true",
+    writeOperationsEnabled: isWriteOperationsEnabled(),
+    writeOperationsMutable: canMutateLocalServerFlags(),
     environment: process.env.NEXT_PUBLIC_ENVIRONMENT ?? "development",
     appVersion: process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0",
     checkedAt: new Date().toISOString(),

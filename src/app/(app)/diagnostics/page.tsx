@@ -1,12 +1,14 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTenantDiagnostics } from "@/features/diagnostics/hooks";
+import { useTenantDiagnostics, useUpdateWriteMode } from "@/features/diagnostics/hooks";
 
 export default function DiagnosticsPage() {
   const { data, isLoading, error } = useTenantDiagnostics();
+  const updateWriteMode = useUpdateWriteMode();
 
   if (error) {
     return (
@@ -14,6 +16,14 @@ export default function DiagnosticsPage() {
         Failed to load diagnostics: {(error as Error).message}
       </div>
     );
+  }
+
+  async function handleWriteModeToggle() {
+    if (!data?.writeOperationsMutable) {
+      return;
+    }
+
+    await updateWriteMode.mutateAsync(!data.writeOperationsEnabled);
   }
 
   return (
@@ -45,6 +55,29 @@ export default function DiagnosticsPage() {
                 <p className="text-sm text-muted-foreground">
                   Set <span className="font-medium">ENABLE_WRITE_OPERATIONS=true</span> to allow create and restore actions.
                 </p>
+                {data.writeOperationsMutable ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Local development can update <span className="font-medium">.env.local</span> here. The change applies to new requests immediately.
+                    </p>
+                    <Button
+                      variant={data.writeOperationsEnabled ? "secondary" : "primary"}
+                      onClick={handleWriteModeToggle}
+                      loading={updateWriteMode.isPending}
+                    >
+                      {data.writeOperationsEnabled ? "Disable write mode" : "Enable write mode"}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    This environment is server-managed. Update deployment configuration instead of using the UI.
+                  </p>
+                )}
+                {updateWriteMode.error && (
+                  <p className="text-sm text-destructive">
+                    Failed to update write mode: {(updateWriteMode.error as Error).message}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
