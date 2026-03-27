@@ -6,6 +6,7 @@
  */
 
 import type { PermissionDiagnostic } from "@/domain/models";
+import { WriteAccessDeniedError } from "@/lib/errors";
 
 // ============================================================
 // Required permission definitions
@@ -94,4 +95,40 @@ export function hasRequiredReadPermissions(tokenScopes: string): boolean {
 export function hasWritePermissions(tokenScopes: string): boolean {
   const writeScope = "DeviceManagementConfiguration.ReadWrite.All";
   return tokenScopes.toLowerCase().includes(writeScope.toLowerCase());
+}
+
+export function extractTokenScopes(accessToken: string): string {
+  try {
+    const parts = accessToken.split(".");
+    if (parts.length !== 3) {
+      return "";
+    }
+
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8")) as {
+      scp?: string;
+    };
+
+    return payload.scp ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function isWriteOperationsEnabled(): boolean {
+  return process.env.ENABLE_WRITE_OPERATIONS === "true";
+}
+
+export function assertWriteAccess(accessToken: string): void {
+  if (!isWriteOperationsEnabled()) {
+    throw new WriteAccessDeniedError(
+      "Write operations are disabled by server configuration. Enable ENABLE_WRITE_OPERATIONS to proceed."
+    );
+  }
+
+  const tokenScopes = extractTokenScopes(accessToken);
+  if (!hasWritePermissions(tokenScopes)) {
+    throw new WriteAccessDeniedError(
+      "The signed-in session does not include DeviceManagementConfiguration.ReadWrite.All. Add and consent the delegated Microsoft Graph permission first."
+    );
+  }
 }

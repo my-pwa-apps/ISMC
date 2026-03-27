@@ -35,3 +35,10 @@ export class UnsupportedPolicyOperationError extends Error {
     this.name = "UnsupportedPolicyOperationError";
   }
 }
+
+export class WriteAccessDeniedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WriteAccessDeniedError";
+  }
+}

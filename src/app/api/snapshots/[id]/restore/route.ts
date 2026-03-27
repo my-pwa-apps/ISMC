@@ -7,6 +7,7 @@ import { getPolicyRepositoryForType } from "@/repositories/getPolicyRepositoryFo
 import { SnapshotService } from "@/services/snapshotService";
 import { AuditService } from "@/services/auditService";
 import { AuditAction } from "@/domain/enums";
+import { assertWriteAccess } from "@/lib/auth/permissions";
 import { UnsupportedPolicyOperationError } from "@/lib/errors";
 import logger from "@/lib/logger";
 
@@ -23,6 +24,8 @@ export async function POST(
   const { id } = await params;
 
   try {
+    assertWriteAccess(tenantSession.accessToken);
+
     const body = await request.json();
     const { newName } = SnapshotRestoreSchema.parse(body);
 

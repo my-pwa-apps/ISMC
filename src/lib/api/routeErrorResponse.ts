@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { MissingTenantContextError, PolicyNotFoundError, UnsupportedPolicyOperationError } from "@/lib/errors";
+import {
+  MissingTenantContextError,
+  PolicyNotFoundError,
+  UnsupportedPolicyOperationError,
+  WriteAccessDeniedError,
+} from "@/lib/errors";
 import { GraphApiError, GraphThrottleError } from "@/lib/graph/client";
 import { InvalidCursorError } from "@/lib/pagination";
 
@@ -30,6 +35,10 @@ export function toRouteErrorResponse(
 
   if (err instanceof UnsupportedPolicyOperationError) {
     return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+
+  if (err instanceof WriteAccessDeniedError) {
+    return NextResponse.json({ error: err.message }, { status: 403 });
   }
 
   if (err instanceof GraphThrottleError) {
