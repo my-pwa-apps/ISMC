@@ -2,7 +2,7 @@
 
 ## Overview
 
-Intune GPMC is a Next.js 15 web application using the App Router. It authenticates users via Microsoft Entra ID and accesses the Microsoft Graph API on their behalf to query Intune policy data.
+ISMC currently operates as a policy lifecycle console for Intune. It authenticates users via Microsoft Entra ID, reads policy state from Microsoft Graph, stores snapshots locally, and can create new policy copies for supported policy types when write mode is enabled.
 
 ---
 
@@ -30,13 +30,10 @@ Browser
   │    └─ Graph repos (live Microsoft Graph data)
   │
   ├─ Service Layer
-  │    ├─ PolicyInventoryService — parallel multi-repo fetch
-  │    ├─ ComparisonService      — settings matrix diff
+  │    ├─ PolicyInventoryService — policy discovery and details
   │    ├─ SearchService          — Fuse.js fuzzy search
-  │    ├─ ReportService          — 8 report generators
-  │    ├─ AssignmentImpactService
   │    ├─ SnapshotService        — Prisma-backed versioning
-  │    └─ AuditService           — Prisma-backed audit log
+  │    └─ AuditService           — Prisma-backed lifecycle audit log
   │
     └─ Prisma ORM
       ├─ SQLite (local development)
@@ -68,6 +65,12 @@ User → Login page
 | `Group.Read.All` | Resolve group names for assignments |
 | `User.Read` | Current user identity |
 
+### Optional Write Permission
+
+| Permission | Purpose |
+|---|---|
+| `DeviceManagementConfiguration.ReadWrite.All` | Create policy copies and restore Settings Catalog snapshots as new policies |
+
 ---
 
 ## Repository Pattern
@@ -93,7 +96,7 @@ The factory (`src/repositories/factory.ts`) switches between mock and real imple
 
 ---
 
-## Data Flow: Policy List
+## Data Flow: Policy Lifecycle
 
 ```
 GET /api/policies
@@ -113,6 +116,25 @@ GET /api/policies
   │    └─ Flatten + sort by lastModifiedDateTime
   │
   └─ Return paginated JSON response
+```
+
+```
+POST /api/snapshots
+  │
+  ├─ Auth check
+  ├─ Load full policy details from repository
+  ├─ Persist normalized policy + raw Graph payload in Prisma
+  └─ Return immutable snapshot metadata
+```
+
+```
+POST /api/snapshots/:id/restore
+  │
+  ├─ Auth check
+  ├─ Load snapshot from Prisma
+  ├─ Verify write mode and supported policy type
+  ├─ Rehydrate Graph create payload from stored raw Settings Catalog data
+  └─ Create a new policy copy in Microsoft Graph
 ```
 
 ---
@@ -141,10 +163,10 @@ Used only for persistence that doesn't live in Graph:
 
 - **PolicySnapshot** — Point-in-time full policy JSON captures
 - **AuditEntry** — Activity log (view, snapshot, note)
-- **SavedSearch** — User-saved search queries
-- **PolicyNote** — Free-text notes attached to policies
-- **PolicyTag** — Custom labels (separate from Graph scope tags)
-- **GpoImport** — Imported GPO analysis results
+- **SavedSearch** — retained but not central to the current MVP
+- **PolicyNote** — retained but not central to the current MVP
+- **PolicyTag** — retained but not central to the current MVP
+- **GpoImport** — retained for future scope
 - **TenantConfig** — Per-tenant feature flag overrides
 
 NextAuth tables (Account, Session, User, VerificationToken) are also managed by Prisma.

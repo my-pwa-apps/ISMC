@@ -71,6 +71,15 @@ export const SnapshotCreateSchema = z.object({
   note: z.string().max(1000).optional(),
 });
 
+export const SnapshotRestoreSchema = z.object({
+  newName: z.string().trim().min(3).max(200),
+});
+
+export const PolicyCloneSchema = z.object({
+  newName: z.string().trim().min(3).max(200),
+  policyType: z.nativeEnum(PolicyType).optional(),
+});
+
 // ============================================================
 // Note
 // ============================================================
@@ -107,4 +116,6 @@ export type PolicyListQuery = z.infer<typeof PolicyListQuerySchema>;
 export type SearchQueryInput = z.infer<typeof SearchQuerySchema>;
 export type CompareRequest = z.infer<typeof CompareRequestSchema>;
 export type SnapshotCreateInput = z.infer<typeof SnapshotCreateSchema>;
+export type SnapshotRestoreInput = z.infer<typeof SnapshotRestoreSchema>;
+export type PolicyCloneInput = z.infer<typeof PolicyCloneSchema>;
 export type NoteCreateInput = z.infer<typeof NoteCreateSchema>;

@@ -67,17 +67,30 @@ export class SettingsCatalogRepository implements PolicyRepository {
   }
 
   async getPolicyWithSettings(id: string): Promise<PolicyObject> {
-    const [policy, settingsRaw] = await Promise.all([
-      this.getPolicy(id),
+    const [rawPolicy, assignments, settingsRaw] = await Promise.all([
+      this.client.get<GraphConfigurationPolicy>(
+        ENDPOINTS.SETTINGS_CATALOG.get(id),
+        "beta"
+      ),
+      this.client.getAll<GraphAssignment>(
+        ENDPOINTS.SETTINGS_CATALOG.assignments(id),
+        "beta"
+      ),
       this.client.getAll<GraphConfigurationPolicySetting>(
         ENDPOINTS.SETTINGS_CATALOG.settings(id),
         "beta"
       ),
     ]);
 
+    const policy = mapConfigurationPolicy(rawPolicy, this.tenantId, assignments);
+
     return {
       ...policy,
       settings: mapConfigurationPolicySettings(settingsRaw),
+      rawGraphPayload: {
+        policy: rawPolicy,
+        settings: settingsRaw,
+      },
     };
   }
 
@@ -91,15 +104,19 @@ export class SettingsCatalogRepository implements PolicyRepository {
 
   async clonePolicy(policyId: string, newName: string): Promise<PolicyObject> {
     this.assertWritesEnabled();
-    // Graph supports policy copy via POST to /copy endpoint
     const original = await this.getPolicyWithSettings(policyId);
-    const body = {
-      displayName: newName,
-      description: original.description,
-      platforms: original.platform,
-      technologies: "mdm",
-      settings: [], // TODO: map settings back to Graph format for round-trip clone
-    };
+    const body = buildSettingsCatalogCreatePayload(original.rawGraphPayload, newName);
+    const created = await this.client.post<GraphConfigurationPolicy>(
+      ENDPOINTS.SETTINGS_CATALOG.list,
+      body,
+      "beta"
+    );
+    return mapConfigurationPolicy(created, this.tenantId, []);
+  }
+
+  async restorePolicyFromSnapshot(snapshot: PolicyObject, newName: string): Promise<PolicyObject> {
+    this.assertWritesEnabled();
+    const body = buildSettingsCatalogCreatePayload(snapshot.rawGraphPayload, newName);
     const created = await this.client.post<GraphConfigurationPolicy>(
       ENDPOINTS.SETTINGS_CATALOG.list,
       body,
@@ -137,4 +154,61 @@ function buildListUrl(query?: Partial<PolicyListQuery>): string {
 
   const qs = params.toString();
   return qs ? `${base}?${qs}` : base;
+}
+
+interface SettingsCatalogCreateSource {
+  policy: GraphConfigurationPolicy;
+  settings: GraphConfigurationPolicySetting[];
+}
+
+function buildSettingsCatalogCreatePayload(
+  rawPayload: PolicyObject["rawGraphPayload"],
+  newName: string
+) {
+  const source = getCreateSource(rawPayload);
+  if (!source) {
+    throw new Error(
+      "This policy does not contain the raw Settings Catalog payload required for clone or restore. Open the policy details again and capture a fresh snapshot."
+    );
+  }
+
+  return {
+    name: newName,
+    description: source.policy.description ?? "",
+    platforms: source.policy.platforms,
+    technologies: source.policy.technologies ?? "mdm",
+    roleScopeTagIds: source.policy.roleScopeTagIds ?? [],
+    templateReference: source.policy.templateReference,
+    settings: source.settings.map((setting) => ({
+      settingInstance: setting.settingInstance,
+    })),
+  };
+}
+
+function getCreateSource(
+  rawPayload: PolicyObject["rawGraphPayload"]
+): SettingsCatalogCreateSource | null {
+  if (!isRecord(rawPayload)) {
+    return null;
+  }
+
+  const policyValue = rawPayload.policy;
+  const settingsValue = rawPayload.settings;
+
+  if (!isGraphConfigurationPolicy(policyValue) || !Array.isArray(settingsValue)) {
+    return null;
+  }
+
+  return {
+    policy: policyValue,
+    settings: settingsValue as GraphConfigurationPolicySetting[],
+  };
+}
+
+function isGraphConfigurationPolicy(value: unknown): value is GraphConfigurationPolicy {
+  return isRecord(value) && typeof value.id === "string" && typeof value.name === "string";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

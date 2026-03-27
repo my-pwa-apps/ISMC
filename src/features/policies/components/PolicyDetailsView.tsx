@@ -12,6 +12,7 @@ import { SettingsTab } from "@/features/policies/tabs/SettingsTab";
 import { AssignmentsTab } from "@/features/policies/tabs/AssignmentsTab";
 import { VersionHistoryTab } from "@/features/policies/tabs/VersionHistoryTab";
 import { RawJsonTab } from "@/features/policies/tabs/RawJsonTab";
+import { PolicyLifecycleActions } from "@/features/policies/components/PolicyLifecycleActions";
 import { useComparisonStore } from "@/features/comparison/store";
 import { ExternalLinkIcon, GitCompareIcon } from "lucide-react";
 
@@ -69,6 +70,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <PolicyLifecycleActions policy={policy} />
           <Button
             variant={inComparison ? "secondary" : "outline"}
             size="sm"

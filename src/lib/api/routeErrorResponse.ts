@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { MissingTenantContextError, PolicyNotFoundError } from "@/lib/errors";
+import { MissingTenantContextError, PolicyNotFoundError, UnsupportedPolicyOperationError } from "@/lib/errors";
 import { GraphApiError, GraphThrottleError } from "@/lib/graph/client";
 import { InvalidCursorError } from "@/lib/pagination";
 
@@ -26,6 +26,10 @@ export function toRouteErrorResponse(
 
   if (err instanceof MissingTenantContextError) {
     return NextResponse.json({ error: err.message }, { status: 401 });
+  }
+
+  if (err instanceof UnsupportedPolicyOperationError) {
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
 
   if (err instanceof GraphThrottleError) {

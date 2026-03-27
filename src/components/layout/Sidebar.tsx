@@ -10,17 +10,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
-  BarChart3,
   ChevronDown,
   ChevronRight,
-  ClipboardList,
   Cog,
   FileSearch,
-  GitCompare,
   History,
   Home,
-  Import,
-  MonitorSmartphone,
   Shield,
   TreePine,
 } from "lucide-react";
@@ -53,13 +48,13 @@ type NavItem = NavLeaf | NavGroup;
 const NAV_TREE: NavItem[] = [
   {
     kind: "leaf",
-    label: "Dashboard",
+    label: "Policy Lifecycle",
     href: "/dashboard",
     icon: Home,
   },
   {
     kind: "group",
-    label: "Policy Explorer",
+    label: "Policy Library",
     icon: TreePine,
     defaultOpen: true,
     children: [
@@ -129,37 +124,6 @@ const NAV_TREE: NavItem[] = [
   },
   {
     kind: "leaf",
-    label: "Compare Policies",
-    href: "/compare",
-    icon: GitCompare,
-  },
-  {
-    kind: "group",
-    label: "Reports",
-    icon: BarChart3,
-    children: [
-      { kind: "leaf", label: "Unassigned Policies", href: "/reports/unassigned-policies" },
-      { kind: "leaf", label: "Duplicate Policies", href: "/reports/duplicate-policies" },
-      { kind: "leaf", label: "Conflicting Settings", href: "/reports/conflicting-settings" },
-      { kind: "leaf", label: "Missing Scope Tags", href: "/reports/missing-scope-tags" },
-      { kind: "leaf", label: "Stale Policies", href: "/reports/stale-policies" },
-      { kind: "leaf", label: "Overlapping Assignments", href: "/reports/overlapping-assignments" },
-      { kind: "leaf", label: "Settings Usage", href: "/reports/settings-usage" },
-    ],
-  },
-  {
-    kind: "group",
-    label: "GPO Migration",
-    icon: Import,
-    children: [
-      { kind: "leaf", label: "Migration Workspace", href: "/migration" },
-      { kind: "leaf", label: "Import GPO Analysis", href: "/migration/import", soon: true },
-      { kind: "leaf", label: "Readiness Dashboard", href: "/migration/readiness", soon: true },
-      { kind: "leaf", label: "Setting Mappings", href: "/migration/mappings", soon: true },
-    ],
-  },
-  {
-    kind: "leaf",
     label: "Audit & History",
     href: "/audit",
     icon: History,
@@ -170,7 +134,6 @@ const NAV_TREE: NavItem[] = [
     icon: Cog,
     children: [
       { kind: "leaf", label: "Tenant Diagnostics", href: "/diagnostics" },
-      { kind: "leaf", label: "Permissions", href: "/settings/permissions", soon: true },
     ],
   },
 ];

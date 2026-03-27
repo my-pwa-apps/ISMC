@@ -52,6 +52,13 @@ export interface PolicyRepository {
    * @throws if write operations are disabled
    */
   updateAssignments?(policyId: string, assignments: PolicyAssignment[]): Promise<void>;
+
+  /**
+   * Restore a new policy from a previously captured snapshot.
+   * Implementations should create a new policy instead of mutating the source in place.
+   * @throws if write operations are disabled or the policy type is unsupported
+   */
+  restorePolicyFromSnapshot?(snapshot: PolicyObject, newName: string): Promise<PolicyObject>;
 }
 
 // ============================================================

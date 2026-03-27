@@ -28,3 +28,10 @@ export class GraphThrottleError extends Error {
     this.name = "GraphThrottleError";
   }
 }
+
+export class UnsupportedPolicyOperationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnsupportedPolicyOperationError";
+  }
+}

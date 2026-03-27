@@ -110,6 +110,18 @@ class MockPolicyRepository implements PolicyRepository {
     };
   }
 
+  async restorePolicyFromSnapshot(snapshot: PolicyObject, newName: string): Promise<PolicyObject> {
+    await simulateDelay(300, 800);
+    return {
+      ...snapshot,
+      id: `restore-${Date.now()}`,
+      displayName: newName,
+      createdDateTime: new Date().toISOString(),
+      lastModifiedDateTime: new Date().toISOString(),
+      assignments: [],
+    };
+  }
+
   async updateAssignments(policyId: string, assignments: PolicyAssignment[]): Promise<void> {
     await simulateDelay(200, 500);
     const policy = this.policies.find((p) => p.id === policyId);

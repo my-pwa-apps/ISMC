@@ -1,6 +1,6 @@
-# Intune GPMC
+# Intune Policy Lifecycle Console
 
-A production-quality web application that functions as a **Group Policy Management Console (GPMC) equivalent for Microsoft Intune** — enabling policy inventory, browsing, comparison, search, assignment impact analysis, GPO migration assessment, change governance, and reporting across your Intune tenant.
+A focused Microsoft Intune administration app centered on **policy creation from existing baselines, version capture, and fast rollback**. The current MVP keeps broad governance features in the background and prioritizes a safe lifecycle for policy changes.
 
 ---
 
@@ -8,15 +8,13 @@ A production-quality web application that functions as a **Group Policy Manageme
 
 | Feature | Description |
 |---|---|
-| **Policy Explorer** | Browse all Intune policies (Settings Catalog, Admin Templates, Device Config, Endpoint Security, Compliance, Scripts, and more) with filtering and list/grid views |
-| **Policy Details** | Drill into any policy: overview metadata, settings tree, assignment breakdown, version history (snapshots), and raw JSON |
-| **Policy Comparison** | Side-by-side settings matrix across 2 policies with conflict and unique setting highlighting |
-| **Global Search** | Fuzzy full-text search across policy names, descriptions, settings keys, and assignments |
-| **Reports** | 8 built-in reports: Unassigned, Missing Scope Tags, Stale (90d+), Overlapping Assignments, Conflicting Settings, Duplicates, Settings Usage, Migration Readiness |
-| **GPO Migration** | Group Policy Analytics integration — assess GPO settings for migration readiness (Ready / Partial / Blocked) |
-| **Snapshots** | Capture and download point-in-time policy snapshots for change governance |
-| **Audit Log** | Structured activity trail for all governance actions |
-| **Dashboard** | KPI cards (total, unassigned, missing tags, stale, conflicts) + recently modified policies |
+| **Policy Library** | Browse existing Intune policies and open full policy details before making changes |
+| **Create From Existing** | Clone supported policy types, starting with Settings Catalog, to create a new revision safely |
+| **Version History** | Capture point-in-time snapshots with notes before a policy change |
+| **Rollback As Copy** | Restore a captured Settings Catalog snapshot into a new policy copy instead of overwriting the live object |
+| **Global Search** | Find a policy quickly so the lifecycle workflow starts from the right baseline |
+| **Audit Trail** | Track version capture, restore, and policy creation events |
+| **Tenant Diagnostics** | Verify whether delegated write permissions and the server-side write gate are enabled |
 
 ---
 
@@ -49,6 +47,15 @@ A production-quality web application that functions as a **Group Policy Manageme
   - `Group.Read.All`
   - `User.Read`
   - `offline_access`
+
+### Write Mode Prerequisites
+
+To move the app beyond read-only mode and enable policy copy creation plus snapshot restore-as-copy:
+
+- Grant `DeviceManagementConfiguration.ReadWrite.All`
+- Set `ENABLE_WRITE_OPERATIONS=true`
+
+Without both of these, the app still supports discovery and snapshot capture, but all policy mutations remain disabled.
 
 ### Setup
 
@@ -99,7 +106,7 @@ See [.env.example](.env.example) for the full list. Key variables:
 | `GRAPH_MAX_CONCURRENT_REQUESTS` | Maximum concurrent in-flight Graph API requests per application request |
 | `GRAPH_FETCH_PAGE_SIZE` | Upstream Microsoft Graph page size used when materializing full repository inventories |
 | `GRAPH_LIST_CONCURRENCY` | Maximum parallel per-policy Graph enrichment calls during list operations |
-| `ENABLE_WRITE_OPERATIONS` | `true` / `false` — allow policy mutations (default: false) |
+| `ENABLE_WRITE_OPERATIONS` | `true` / `false` — allow policy creation and rollback actions (default: false) |
 
 ---
 
@@ -193,6 +200,14 @@ src/
 
 ---
 
+## Current Scope
+
+The current product scope is intentionally narrower than the original GPMC-style vision:
+
+- Primary path: browse a policy, capture a version, create a copy, restore a rollback copy when needed
+- Supported write workflow today: Settings Catalog policies
+- Safe rollback model: restore creates a new policy copy from a captured snapshot instead of overwriting the source policy
+
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) for detailed system design, data flow diagrams, and Graph API integration notes.
@@ -203,7 +218,7 @@ See [docs/architecture.md](docs/architecture.md) for detailed system design, dat
 
 - Auth tokens are stored server-side only (JWT in HTTP-only cookies); never in localStorage
 - All API routes require authentication via middleware
-- Write operations are gated by `ENABLE_WRITE_OPERATIONS=true` (default: off)
+- Write operations are gated by `ENABLE_WRITE_OPERATIONS=true` and delegated Graph write scope
 - CSP, X-Frame-Options, and HSTS headers are set in `next.config.ts`
 - All user inputs are validated with Zod before processing
 

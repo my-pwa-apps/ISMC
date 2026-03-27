@@ -131,7 +131,7 @@ export function Header({ title, breadcrumbs }: HeaderProps) {
               </div>
               <div className="py-1">
                 <Link
-                  href="/settings/diagnostics"
+                  href="/diagnostics"
                   className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
                   onClick={() => setUserMenuOpen(false)}
                 >
