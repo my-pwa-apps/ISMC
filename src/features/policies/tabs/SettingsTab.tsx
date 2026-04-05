@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { type PolicyObject, type PolicySetting } from "@/domain/models";
 import { SearchInput } from "@/components/ui/search-input";
 import { SettingRow } from "@/components/shared/setting-row";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface SettingsTabProps {
   policy: PolicyObject;
@@ -43,20 +42,31 @@ function CategoryGroup({ category, settings, defaultOpen }: {
 
 export function SettingsTab({ policy }: SettingsTabProps) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // Debounce the search query to avoid re-renders on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 200);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const settings = policy.settings ?? [];
 
-  const filtered = query
-    ? settings.filter(
-        (s) =>
-          s.displayName.toLowerCase().includes(query.toLowerCase()) ||
-          (s.cspPath ?? "").toLowerCase().includes(query.toLowerCase()) ||
-          (s.path ?? "").toLowerCase().includes(query.toLowerCase())
-      )
-    : settings;
+  const filtered = useMemo(
+    () =>
+      debouncedQuery
+        ? settings.filter(
+            (s) =>
+              s.displayName.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+              (s.cspPath ?? "").toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+              (s.path ?? "").toLowerCase().includes(debouncedQuery.toLowerCase())
+          )
+        : settings,
+    [settings, debouncedQuery]
+  );
 
   // Group by category only when not searching
-  const grouped = !query
+  const grouped = !debouncedQuery
     ? filtered.reduce<Record<string, PolicySetting[]>>((acc, s) => {
         const cat = getCategory(s);
         (acc[cat] ??= []).push(s);
@@ -71,8 +81,8 @@ export function SettingsTab({ policy }: SettingsTabProps) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {settings.length} setting{settings.length !== 1 ? "s" : ""}
-          {!query && categoryCount > 1 && ` · ${categoryCount} categories`}
-          {query && ` — ${filtered.length} match${filtered.length !== 1 ? "es" : ""}`}
+          {!debouncedQuery && categoryCount > 1 && ` · ${categoryCount} categories`}
+          {debouncedQuery && ` — ${filtered.length} match${filtered.length !== 1 ? "es" : ""}`}
         </p>
         <SearchInput
           value={query}
@@ -84,9 +94,9 @@ export function SettingsTab({ policy }: SettingsTabProps) {
 
       {filtered.length === 0 ? (
         <EmptyState
-          title={query ? "No matching settings" : "No settings configured"}
+          title={debouncedQuery ? "No matching settings" : "No settings configured"}
           description={
-            query
+            debouncedQuery
               ? "Try a different search term."
               : "This policy has no configurable settings."
           }

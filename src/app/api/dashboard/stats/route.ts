@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       undefined,
       tenantSession.isDemoMode
     );
-    const service = new PolicyInventoryService(registry);
+    const service = new PolicyInventoryService(registry, tenantSession.tenantId);
     const stats = await service.getDashboardStats();
 
     return NextResponse.json({ data: stats });

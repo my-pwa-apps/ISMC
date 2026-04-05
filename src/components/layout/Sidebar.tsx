@@ -20,7 +20,6 @@ import {
   TreePine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Platform, PolicyType } from "@/domain/enums";
 
 // ============================================================
 // Nav tree definition

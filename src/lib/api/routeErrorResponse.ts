@@ -8,6 +8,7 @@ import {
   WriteAccessDeniedError,
 } from "@/lib/errors";
 import { GraphApiError, GraphThrottleError } from "@/lib/graph/client";
+import { CircuitOpenError } from "@/lib/graph/circuitBreaker";
 import { InvalidCursorError } from "@/lib/pagination";
 
 export function toRouteErrorResponse(
@@ -47,6 +48,18 @@ export function toRouteErrorResponse(
       {
         status: 429,
         headers: { "Retry-After": String(err.retryAfterSeconds) },
+      }
+    );
+  }
+
+  if (err instanceof CircuitOpenError) {
+    return NextResponse.json(
+      { error: err.message, code: "CircuitOpen" },
+      {
+        status: 503,
+        headers: {
+          "Retry-After": String(Math.ceil(err.resetAfterMs / 1000)),
+        },
       }
     );
   }

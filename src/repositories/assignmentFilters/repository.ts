@@ -9,19 +9,11 @@ import type { GraphClient } from "@/lib/graph/client";
 import type { GraphAssignmentFilter } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
 import { FilterMode, Platform } from "@/domain/enums";
-
-const PLATFORM_MAP: Record<string, Platform> = {
-  windows10: Platform.Windows,
-  iOS: Platform.iOS,
-  macOS: Platform.macOS,
-  android: Platform.Android,
-  androidForWork: Platform.AndroidEnterprise,
-};
+import { mapPlatform } from "../shared/platformMapper";
 
 function mapFilter(raw: GraphAssignmentFilter): AssignmentFilter {
-  const platform = raw.platform
-    ? (PLATFORM_MAP[raw.platform] ?? Platform.CrossPlatform)
-    : Platform.CrossPlatform;
+  const mapped = raw.platform ? mapPlatform(raw.platform) : Platform.CrossPlatform;
+  const platform = mapped === Platform.Unknown ? Platform.CrossPlatform : mapped;
   return {
     id: raw.id,
     displayName: raw.displayName,

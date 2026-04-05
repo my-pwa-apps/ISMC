@@ -14,14 +14,13 @@ import type {
   GraphConfigurationPolicy,
   GraphConfigurationPolicySetting,
   GraphAssignment,
-  GraphODataCollection,
 } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
-import { mapWithConcurrency } from "@/lib/utils";
 import { mapConfigurationPolicy, mapConfigurationPolicySettings } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
-import { getGraphListConcurrency } from "../shared/graphConcurrency";
+import { enrichPoliciesWithAssignments } from "../shared/enrichWithAssignments";
 import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
+import { UnsupportedPolicyOperationError } from "@/lib/errors";
 import logger from "@/lib/logger";
 
 export class SettingsCatalogRepository implements PolicyRepository {
@@ -37,18 +36,14 @@ export class SettingsCatalogRepository implements PolicyRepository {
     const path = buildListUrl(query);
     const raw = await this.client.getAll<GraphConfigurationPolicy>(path, "beta");
 
-    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
-        try {
-          const assignments = await this.client.getAll<GraphAssignment>(
-            ENDPOINTS.SETTINGS_CATALOG.assignments(p.id),
-            "beta"
-          );
-          return mapConfigurationPolicy(p, this.tenantId, assignments);
-        } catch (err) {
-          log.warn({ policyId: p.id, err }, "Failed to fetch assignments for policy");
-          return mapConfigurationPolicy(p, this.tenantId, []);
-        }
-      });
+    const policies = await enrichPoliciesWithAssignments(
+      this.client,
+      raw,
+      (p) => ENDPOINTS.SETTINGS_CATALOG.assignments(p.id),
+      "beta",
+      (p, assignments) => mapConfigurationPolicy(p, this.tenantId, assignments),
+      "SettingsCatalog"
+    );
 
     log.info({ count: policies.length }, "Settings Catalog policies loaded");
     return policies;
@@ -125,10 +120,11 @@ export class SettingsCatalogRepository implements PolicyRepository {
     return mapConfigurationPolicy(created, this.tenantId, []);
   }
 
-  async updateAssignments(policyId: string, assignments: PolicyAssignment[]): Promise<void> {
+  async updateAssignments(_policyId: string, _assignments: PolicyAssignment[]): Promise<void> {
     this.assertWritesEnabled();
-    // TODO: map PolicyAssignment[] back to Graph assignment format
-    logger.warn({ policyId, count: assignments.length }, "updateAssignments not yet implemented for Settings Catalog");
+    throw new UnsupportedPolicyOperationError(
+      "updateAssignments is not yet implemented for Settings Catalog"
+    );
   }
 
   private assertWritesEnabled(): void {

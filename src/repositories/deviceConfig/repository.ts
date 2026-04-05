@@ -9,14 +9,12 @@ import type { PolicyListQuery } from "@/lib/validation/schemas";
 import type { GraphClient } from "@/lib/graph/client";
 import type { GraphDeviceConfiguration, GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
-import { mapWithConcurrency } from "@/lib/utils";
 import { mapDeviceConfiguration } from "./mapper";
 import { mapAssignments } from "../shared/assignmentMapper";
+import { enrichPoliciesWithAssignments } from "../shared/enrichWithAssignments";
 import { mapRawPolicySettings } from "../shared/rawPolicySettings";
-import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import { SettingSource } from "@/domain/enums";
-import logger from "@/lib/logger";
 
 const DEVICE_CONFIGURATION_SETTING_SKIP_KEYS = new Set([
   "id",
@@ -35,24 +33,19 @@ export class DeviceConfigRepository implements PolicyRepository {
     private readonly tenantId: string
   ) {}
 
-  async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
-    const log = logger.child({ repository: "DeviceConfig", method: "listPolicies" });
+  async listPolicies(_query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.DEVICE_CONFIGS.list}?${params}`;
     const raw = await this.client.getAll<GraphDeviceConfiguration>(path, "v1.0");
 
-    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
-        try {
-          const assignments = await this.client.getAll<GraphAssignment>(
-            ENDPOINTS.DEVICE_CONFIGS.assignments(p.id),
-            "v1.0"
-          );
-          return mapDeviceConfiguration(p, this.tenantId, assignments);
-        } catch (err) {
-          log.warn({ policyId: p.id, err }, "Failed to fetch device config assignments");
-          return mapDeviceConfiguration(p, this.tenantId, []);
-        }
-      });
+    const policies = await enrichPoliciesWithAssignments(
+      this.client,
+      raw,
+      (p) => ENDPOINTS.DEVICE_CONFIGS.assignments(p.id),
+      "v1.0",
+      (p, assignments) => mapDeviceConfiguration(p, this.tenantId, assignments),
+      "DeviceConfig"
+    );
 
     return policies;
   }

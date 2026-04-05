@@ -3,41 +3,18 @@
  * GraphDeviceConfiguration → PolicyObject
  */
 
-import { Platform, PolicyStatus, PolicyType, TargetingModel } from "@/domain/enums";
+import { PolicyStatus, PolicyType, TargetingModel } from "@/domain/enums";
 import type { PolicyObject } from "@/domain/models";
 import type { GraphDeviceConfiguration, GraphAssignment } from "@/lib/graph/types";
 import { mapAssignments } from "../shared/assignmentMapper";
-
-// ============================================================
-// @odata.type to Platform mapping for classic profiles
-// ============================================================
-
-const ODATA_TO_PLATFORM: ReadonlyArray<[string, Platform]> = [
-  ["windows10", Platform.Windows],
-  ["windowsPhone", Platform.WindowsPhone],
-  ["windows", Platform.Windows],
-  ["iosEas", Platform.iOS],
-  ["ios", Platform.iOS],
-  ["iPad", Platform.iPadOS],
-  ["macOS", Platform.macOS],
-  ["mac", Platform.macOS],
-  ["androidWorkProfile", Platform.AndroidEnterprise],
-  ["android", Platform.Android],
-];
-
-function mapPlatformFromOdataType(odataType: string): Platform {
-  const lower = odataType.toLowerCase();
-  for (const [fragment, platform] of ODATA_TO_PLATFORM) {
-    if (lower.includes(fragment.toLowerCase())) return platform;
-  }
-  return Platform.Unknown;
-}
+import { mapPlatform } from "../shared/platformMapper";
 
 // ============================================================
 // @odata.type friendl display names
 // ============================================================
 
-const PROFILE_TYPE_DISPLAY: Record<string, string> = {
+// Profile type display names — used externally
+export const PROFILE_TYPE_DISPLAY: Record<string, string> = {
   "#microsoft.graph.windows10EndpointProtectionConfiguration": "Endpoint Protection",
   "#microsoft.graph.windows10GeneralConfiguration": "General Configuration",
   "#microsoft.graph.windowsDomainJoinConfiguration": "Domain Join",
@@ -48,7 +25,7 @@ const PROFILE_TYPE_DISPLAY: Record<string, string> = {
   "#microsoft.graph.androidCompliancePolicy": "Compliance Policy",
 };
 
-function getProfileTypeDisplay(odataType: string): string {
+export function getProfileTypeDisplay(odataType: string): string {
   return PROFILE_TYPE_DISPLAY[odataType] ?? odataType.replace("#microsoft.graph.", "").replace(/Configuration$/, "");
 }
 
@@ -63,7 +40,7 @@ export function mapDeviceConfiguration(
     displayName: raw.displayName,
     description: raw.description,
     policyType: PolicyType.DeviceConfiguration,
-    platform: mapPlatformFromOdataType(raw["@odata.type"]),
+    platform: mapPlatform(raw["@odata.type"]),
     odataType: raw["@odata.type"],
     status: PolicyStatus.Active,
     createdDateTime: raw.createdDateTime,

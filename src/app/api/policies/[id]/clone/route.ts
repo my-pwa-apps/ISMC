@@ -41,7 +41,7 @@ export async function POST(
       undefined,
       tenantSession.isDemoMode
     );
-    const inventory = new PolicyInventoryService(registry);
+    const inventory = new PolicyInventoryService(registry, tenantSession.tenantId);
     const sourcePolicy = await inventory.getPolicySummary(id, policyType);
     const repository = getPolicyRepositoryForType(registry, sourcePolicy.policyType);
 

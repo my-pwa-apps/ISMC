@@ -2,7 +2,7 @@
  * Settings Catalog mapper: GraphConfigurationPolicy → PolicyObject
  */
 
-import { Platform, PolicyStatus, PolicyType, SettingDataType, SettingSource, TargetingModel } from "@/domain/enums";
+import { PolicyStatus, PolicyType, SettingDataType, SettingSource, TargetingModel } from "@/domain/enums";
 import type { PolicyObject, PolicySetting } from "@/domain/models";
 import type {
   GraphConfigurationPolicy,
@@ -10,29 +10,7 @@ import type {
   GraphAssignment,
 } from "@/lib/graph/types";
 import { mapAssignments } from "../shared/assignmentMapper";
-
-// ============================================================
-// Platform mapping
-// ============================================================
-
-const PLATFORM_MAP: Record<string, Platform> = {
-  windows10: Platform.Windows,
-  windows: Platform.Windows,
-  macOS: Platform.macOS,
-  iOS: Platform.iOS,
-  ipad: Platform.iPadOS,
-  android: Platform.Android,
-  androidEnterprise: Platform.AndroidEnterprise,
-  linux: Platform.Linux,
-};
-
-function mapPlatform(raw?: string): Platform {
-  if (!raw) return Platform.Unknown;
-  for (const [key, val] of Object.entries(PLATFORM_MAP)) {
-    if (raw.toLowerCase().includes(key.toLowerCase())) return val;
-  }
-  return Platform.Unknown;
-}
+import { mapPlatform } from "../shared/platformMapper";
 
 // ============================================================
 // Policy header mapper

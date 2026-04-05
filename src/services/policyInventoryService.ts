@@ -11,10 +11,14 @@ import type { PolicyListQuery } from "@/lib/validation/schemas";
 import { Platform, PolicyType, TargetingModel, AssignmentTargetType } from "@/domain/enums";
 import { isStale, groupBy } from "@/lib/utils";
 import { PolicyNotFoundError } from "@/lib/errors";
+import { getCachedPolicies, setCachedPolicies } from "@/lib/cache/policyCache";
 import logger from "@/lib/logger";
 
 export class PolicyInventoryService {
-  constructor(private readonly registry: RepositoryRegistry) {}
+  constructor(
+    private readonly registry: RepositoryRegistry,
+    private readonly tenantId?: string
+  ) {}
 
   // ============================================================
   // Listing
@@ -23,9 +27,22 @@ export class PolicyInventoryService {
   /**
    * List all policies across all types. Executes all repository calls
    * in parallel to minimise latency.
+   *
+   * Results are cached per-tenant for 5 minutes to reduce Graph API load
+   * on repeated calls (search, dashboard stats, reports).
    */
   async listAll(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ service: "PolicyInventory", method: "listAll" });
+
+    // Check cache for unfiltered requests
+    const isUnfiltered = !query?.search && !query?.policyType && !query?.platform;
+    if (isUnfiltered && this.tenantId) {
+      const cached = getCachedPolicies(this.tenantId);
+      if (cached) {
+        log.debug({ count: cached.length }, "Returning cached policy inventory");
+        return cached;
+      }
+    }
 
     const [
       settingsCatalog,
@@ -66,7 +83,14 @@ export class PolicyInventoryService {
       }
     }
 
-    return this.enrichWithScopeTags(this.resolveTargetingModels(policies));
+    const enriched = await this.enrichWithScopeTags(this.resolveTargetingModels(policies));
+
+    // Cache unfiltered results for subsequent requests
+    if (isUnfiltered && this.tenantId) {
+      setCachedPolicies(this.tenantId, enriched);
+    }
+
+    return enriched;
   }
 
   /**

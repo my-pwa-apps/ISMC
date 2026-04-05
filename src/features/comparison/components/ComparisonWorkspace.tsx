@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useComparisonStore } from "@/features/comparison/store";
 import { useComparison } from "@/features/comparison/hooks";

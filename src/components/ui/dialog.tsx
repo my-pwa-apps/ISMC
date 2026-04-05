@@ -5,7 +5,6 @@ import {
   forwardRef,
   type ComponentPropsWithoutRef,
   type ElementRef,
-  type ReactNode,
 } from "react";
 import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";

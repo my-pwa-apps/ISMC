@@ -48,7 +48,7 @@ export async function GET(
       undefined,
       tenantSession.isDemoMode
     );
-    const service = new PolicyInventoryService(registry);
+    const service = new PolicyInventoryService(registry, tenantSession.tenantId);
     const policy = query.withSettings
       ? await service.getPolicy(id, query.policyType)
       : await service.getPolicySummary(id, query.policyType);

@@ -11,7 +11,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // Required for server actions
     serverActions: {
-      allowedOrigins: ["localhost:3000"],
+      allowedOrigins: [
+        "localhost:3000",
+        ...(process.env.ALLOWED_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
+      ],
     },
   },
 

@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       undefined,
       tenantSession.isDemoMode
     );
-    const inventory = new PolicyInventoryService(registry);
+    const inventory = new PolicyInventoryService(registry, tenantSession.tenantId);
     const policy = await inventory.getPolicy(policyId);
 
     const snapshotService = new SnapshotService();

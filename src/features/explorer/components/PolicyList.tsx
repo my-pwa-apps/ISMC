@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { type PolicyObject } from "@/domain/models";
-import { PolicyType, Platform } from "@/domain/enums";
+import { PolicyType } from "@/domain/enums";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

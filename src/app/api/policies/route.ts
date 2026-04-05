@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       correlationId,
       tenantSession.isDemoMode
     );
-    const service = new PolicyInventoryService(registry);
+    const service = new PolicyInventoryService(registry, tenantSession.tenantId);
 
     const policies = query.policyType
       ? await service.listByType(query.policyType, query)

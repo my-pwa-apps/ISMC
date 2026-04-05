@@ -9,13 +9,12 @@ import type { PolicyListQuery } from "@/lib/validation/schemas";
 import type { GraphClient } from "@/lib/graph/client";
 import type { GraphDeviceCompliancePolicy, GraphAssignment } from "@/lib/graph/types";
 import { ENDPOINTS } from "@/lib/graph/endpoints";
-import { mapWithConcurrency } from "@/lib/utils";
-import { Platform, PolicyStatus, PolicyType, SettingSource, TargetingModel } from "@/domain/enums";
+import { PolicyStatus, PolicyType, SettingSource, TargetingModel } from "@/domain/enums";
 import { mapAssignments } from "../shared/assignmentMapper";
-import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
 import { mapRawPolicySettings } from "../shared/rawPolicySettings";
-import logger from "@/lib/logger";
+import { mapPlatform } from "../shared/platformMapper";
+import { enrichPoliciesWithAssignments } from "../shared/enrichWithAssignments";
 
 const COMPLIANCE_SETTING_SKIP_KEYS = new Set([
   "id",
@@ -28,16 +27,6 @@ const COMPLIANCE_SETTING_SKIP_KEYS = new Set([
   "@odata.type",
   "scheduledActionsForRule",
 ]);
-
-function mapCompliancePlatform(odataType: string): Platform {
-  const t = odataType.toLowerCase();
-  if (t.includes("windows")) return Platform.Windows;
-  if (t.includes("macos") || t.includes("mac")) return Platform.macOS;
-  if (t.includes("ios")) return Platform.iOS;
-  if (t.includes("androidworkprofile")) return Platform.AndroidEnterprise;
-  if (t.includes("android")) return Platform.Android;
-  return Platform.Unknown;
-}
 
 function mapCompliancePolicy(
   raw: GraphDeviceCompliancePolicy,
@@ -54,7 +43,7 @@ function mapCompliancePolicy(
     displayName: raw.displayName,
     description: raw.description,
     policyType: PolicyType.CompliancePolicy,
-    platform: mapCompliancePlatform(raw["@odata.type"]),
+    platform: mapPlatform(raw["@odata.type"]),
     odataType: raw["@odata.type"],
     status: PolicyStatus.Active,
     createdDateTime: raw.createdDateTime,
@@ -75,24 +64,19 @@ export class ComplianceRepository implements PolicyRepository {
     private readonly tenantId: string
   ) {}
 
-  async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
-    const log = logger.child({ repository: "Compliance", method: "listPolicies" });
+  async listPolicies(_query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.COMPLIANCE.list}?${params}`;
     const raw = await this.client.getAll<GraphDeviceCompliancePolicy>(path, "v1.0");
 
-    const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
-        try {
-          const assignments = await this.client.getAll<GraphAssignment>(
-            ENDPOINTS.COMPLIANCE.assignments(p.id),
-            "v1.0"
-          );
-          return mapCompliancePolicy(p, this.tenantId, assignments);
-        } catch (err) {
-          log.warn({ policyId: p.id, err }, "Failed to fetch compliance policy assignments");
-          return mapCompliancePolicy(p, this.tenantId, []);
-        }
-      });
+    const policies = await enrichPoliciesWithAssignments(
+      this.client,
+      raw,
+      (p) => ENDPOINTS.COMPLIANCE.assignments(p.id),
+      "v1.0",
+      (p, assignments) => mapCompliancePolicy(p, this.tenantId, assignments),
+      "Compliance"
+    );
     return policies;
   }
 

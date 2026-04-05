@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useAuditLog } from "@/features/audit/hooks";
 import { DataTable } from "@/components/ui/data-table";

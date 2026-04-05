@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { AlertTriangleIcon, CopyPlusIcon, HistoryIcon, ShieldAlertIcon } from "lucide-react";
+import { CopyPlusIcon, HistoryIcon, ShieldAlertIcon } from "lucide-react";
 import type { PolicyObject } from "@/domain/models";
 import { PolicyType } from "@/domain/enums";
 import { Button } from "@/components/ui/button";

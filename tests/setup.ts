@@ -14,5 +14,17 @@ vi.mock("next-auth/react", () => ({
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Silence console.error for React act() warnings
-vi.spyOn(console, "error").mockImplementation(() => {});
+// Selectively suppress known React warnings — keep real errors visible
+const originalError = console.error;
+vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+  const msg = typeof args[0] === "string" ? args[0] : "";
+  // Suppress known noisy React warnings in tests
+  if (
+    msg.includes("act(") ||
+    msg.includes("ReactDOMTestUtils.act") ||
+    msg.includes("Warning: An update to")
+  ) {
+    return;
+  }
+  originalError.call(console, ...args);
+});

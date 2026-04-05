@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       undefined,
       tenantSession.isDemoMode
     );
-    const inventory = new PolicyInventoryService(registry);
+    const inventory = new PolicyInventoryService(registry, tenantSession.tenantId);
     const searcher = new SearchService();
 
     const policies = await inventory.listAll();

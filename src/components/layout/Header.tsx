@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, User, LogOut, ChevronDown, GitCompare } from "lucide-react";
+import { Search, User, LogOut, ChevronDown, GitCompare } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";

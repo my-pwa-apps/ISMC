@@ -18,7 +18,6 @@ import type { AssignmentFilter, PolicyAssignment, PolicyObject, ScopeTag } from 
 import type { PolicyListQuery } from "@/lib/validation/schemas";
 import { PolicyType } from "@/domain/enums";
 import {
-  ALL_MOCK_POLICIES,
   MOCK_FILTERS,
   MOCK_SCOPE_TAGS,
   MOCK_SETTINGS_CATALOG_POLICIES,

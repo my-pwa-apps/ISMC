@@ -41,6 +41,11 @@ export class SnapshotService {
       "Policy snapshot created"
     );
 
+    // Enforce retention limits asynchronously (non-blocking)
+    this.enforceRetention(policy.id, policy.tenantId).catch((err) => {
+      log.warn({ err, policyId: policy.id }, "Failed to enforce snapshot retention");
+    });
+
     return toSnapshot(record);
   }
 
@@ -52,7 +57,7 @@ export class SnapshotService {
       where: { policyId, tenantId },
       orderBy: { createdAt: "desc" },
     });
-    return records.map(toSnapshot);
+    return toSnapshotsSafe(records);
   }
 
   /**
@@ -74,7 +79,7 @@ export class SnapshotService {
       orderBy: { createdAt: "desc" },
       take: limit,
     });
-    return records.map(toSnapshot);
+    return toSnapshotsSafe(records);
   }
 
   /**
@@ -82,6 +87,58 @@ export class SnapshotService {
    */
   async deleteSnapshot(snapshotId: string, tenantId: string): Promise<void> {
     await db.policySnapshot.deleteMany({ where: { id: snapshotId, tenantId } });
+  }
+
+  // ============================================================
+  // Retention
+  // ============================================================
+
+  /**
+   * Enforce snapshot retention limits per policy.
+   *
+   * Deletes the oldest snapshots when a policy exceeds the configured
+   * maximum. Called automatically after creating a new snapshot.
+   *
+   * @param policyId - The policy to enforce limits for
+   * @param tenantId - Tenant scope
+   * @param maxPerPolicy - Maximum snapshots to keep per policy (default: 50)
+   */
+  async enforceRetention(
+    policyId: string,
+    tenantId: string,
+    maxPerPolicy: number = Number(process.env.SNAPSHOT_MAX_PER_POLICY) || 50
+  ): Promise<number> {
+    const log = logger.child({ service: "Snapshot", method: "enforceRetention" });
+
+    const count = await db.policySnapshot.count({
+      where: { policyId, tenantId },
+    });
+
+    if (count <= maxPerPolicy) return 0;
+
+    // Find IDs of snapshots to delete (oldest first, beyond the limit)
+    const toDelete = await db.policySnapshot.findMany({
+      where: { policyId, tenantId },
+      orderBy: { createdAt: "desc" },
+      skip: maxPerPolicy,
+      select: { id: true },
+    });
+
+    if (toDelete.length === 0) return 0;
+
+    const deleteResult = await db.policySnapshot.deleteMany({
+      where: {
+        id: { in: toDelete.map((s) => s.id) },
+        tenantId,
+      },
+    });
+
+    log.info(
+      { policyId, tenantId, deleted: deleteResult.count, maxPerPolicy },
+      "Snapshot retention enforced"
+    );
+
+    return deleteResult.count;
   }
 }
 
@@ -106,6 +163,7 @@ function toSnapshot(record: SnapshotRecord): PolicySnapshot {
   const snapshotData = safeJsonParse<PolicyObject>(record.snapshotData);
 
   if (!snapshotData) {
+    logger.error({ snapshotId: record.id, policyId: record.policyId }, "Snapshot payload is corrupted — skipping");
     throw new Error(`Snapshot payload is corrupted: ${record.id}`);
   }
 
@@ -121,4 +179,20 @@ function toSnapshot(record: SnapshotRecord): PolicySnapshot {
     createdById: record.createdById ?? undefined,
     createdByName: record.createdBy?.name ?? undefined,
   };
+}
+
+/**
+ * Safely map an array of snapshot records, skipping corrupted entries
+ * instead of crashing the entire list operation.
+ */
+function toSnapshotsSafe(records: SnapshotRecord[]): PolicySnapshot[] {
+  const snapshots: PolicySnapshot[] = [];
+  for (const record of records) {
+    try {
+      snapshots.push(toSnapshot(record));
+    } catch {
+      // Logged inside toSnapshot — skip this record
+    }
+  }
+  return snapshots;
 }

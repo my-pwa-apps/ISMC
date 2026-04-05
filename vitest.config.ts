@@ -20,6 +20,12 @@ export default defineConfig({
         "prisma/",
         "src/app/**/*.tsx", // exclude Next.js page components from unit coverage
       ],
+      thresholds: {
+        lines: 50,
+        functions: 50,
+        branches: 40,
+        statements: 50,
+      },
     },
   },
   resolve: {

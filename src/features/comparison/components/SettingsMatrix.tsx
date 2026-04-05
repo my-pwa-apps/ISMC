@@ -1,6 +1,6 @@
 "use client";
 
-import { type PolicyComparisonResult, type SettingComparisonEntry } from "@/domain/models";
+import { type PolicyComparisonResult } from "@/domain/models";
 import { SettingComparisonStatus } from "@/domain/enums";
 import { cn } from "@/lib/utils";
 

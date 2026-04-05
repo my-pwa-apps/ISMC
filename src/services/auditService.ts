@@ -7,7 +7,6 @@
 import db from "@/lib/db/client";
 import type { AuditRecord } from "@/domain/models";
 import type { AuditAction } from "@/domain/enums";
-import logger from "@/lib/logger";
 import { safeJsonParse } from "@/lib/utils";
 
 export interface LogAuditParams {

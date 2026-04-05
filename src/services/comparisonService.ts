@@ -6,10 +6,19 @@
 
 import type { PolicyObject, PolicyComparisonResult, SettingComparisonEntry } from "@/domain/models";
 import { SettingComparisonStatus } from "@/domain/enums";
-import { randomUUID } from "crypto";
+import { createHash } from "crypto";
 
-function generateId(): string {
-  return randomUUID();
+/**
+ * Generate a deterministic comparison ID from the sorted policy IDs.
+ * This makes comparisons idempotent — comparing the same policies
+ * always produces the same comparison ID.
+ */
+function generateDeterministicId(policyIds: string[]): string {
+  const sorted = [...policyIds].sort();
+  return createHash("sha256")
+    .update(sorted.join(":"))
+    .digest("hex")
+    .slice(0, 32);
 }
 
 export class ComparisonService {
@@ -105,7 +114,7 @@ export class ComparisonService {
     const assignmentDiff = this.compareAssignments(policies);
 
     return {
-      id: generateId(),
+      id: generateDeterministicId(policyIds),
       policyIds,
       policyNames,
       entries,

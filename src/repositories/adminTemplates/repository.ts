@@ -30,7 +30,7 @@ export class AdminTemplatesRepository implements PolicyRepository {
     private readonly tenantId: string
   ) {}
 
-  async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
+  async listPolicies(_query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ repository: "AdminTemplates", method: "listPolicies" });
 
     const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
@@ -45,7 +45,10 @@ export class AdminTemplatesRepository implements PolicyRepository {
             this.client.getAll<GraphGroupPolicyDefinitionValue>(
               ENDPOINTS.ADMIN_TEMPLATES.definitionValues(p.id),
               "beta"
-            ).catch(() => []),
+            ).catch((err) => {
+              logger.warn({ policyId: p.id, err }, "Failed to fetch admin template definition values");
+              return [];
+            }),
           ]);
           const policy = mapGroupPolicyConfiguration(p, this.tenantId, assignments);
           return { ...policy, settingCount: defValues.length };

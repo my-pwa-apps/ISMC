@@ -96,7 +96,7 @@ export class EndpointSecurityRepository implements PolicyRepository {
     private readonly typeFilter?: "security-baseline" | "endpoint-security"
   ) {}
 
-  async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
+  async listPolicies(_query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const log = logger.child({ repository: "EndpointSecurity", method: "listPolicies" });
     const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${ENDPOINTS.ENDPOINT_SECURITY.list}?${params}`;
@@ -115,7 +115,10 @@ export class EndpointSecurityRepository implements PolicyRepository {
           const [assignments, settings] = await Promise.all([
             this.client.getAll<GraphAssignment>(ENDPOINTS.ENDPOINT_SECURITY.assignments(p.id), "beta"),
             this.client.getAll<GraphIntentSetting>(ENDPOINTS.ENDPOINT_SECURITY.settings(p.id), "beta")
-              .catch(() => []),
+              .catch((err) => {
+                logger.warn({ policyId: p.id, err }, "Failed to fetch endpoint security settings");
+                return [];
+              }),
           ]);
           const policy = mapIntentPolicy(p, this.tenantId, assignments);
           return { ...policy, settingCount: settings.length };

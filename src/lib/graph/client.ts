@@ -22,6 +22,7 @@ import axios, {
   isAxiosError,
 } from "axios";
 import { graphBase, type EndpointVersion } from "./endpoints";
+import { graphCircuitBreaker } from "./circuitBreaker";
 import type { GraphODataCollection, GraphError } from "./types";
 import logger from "@/lib/logger";
 
@@ -183,7 +184,6 @@ function buildAxiosInstance(opts: GraphClientOptions): AxiosInstance {
 export class GraphClient {
   private readonly axiosV1: AxiosInstance;
   private readonly axiosBeta: AxiosInstance;
-  private readonly correlationId?: string;
   private readonly requestGate = new RequestGate(
     Number.isFinite(MAX_CONCURRENT_REQUESTS) && MAX_CONCURRENT_REQUESTS >= 1
       ? Math.floor(MAX_CONCURRENT_REQUESTS)
@@ -191,7 +191,6 @@ export class GraphClient {
   );
 
   constructor(opts: GraphClientOptions) {
-    this.correlationId = opts.correlationId;
     this.axiosV1 = buildAxiosInstance({ ...opts, version: "v1.0" });
     this.axiosBeta = buildAxiosInstance({ ...opts, version: "beta" });
   }
@@ -270,37 +269,39 @@ export class GraphClient {
     fn: () => Promise<AxiosResponse<T>>,
     maxRetries: number = MAX_RETRIES
   ): Promise<T> {
-    let attempt = 0;
+    return graphCircuitBreaker.execute(async () => {
+      let attempt = 0;
 
-    while (true) {
-      const release = await this.requestGate.acquire();
-      try {
-        const response = await fn();
-        return response.data;
-      } catch (err) {
-        if (!isAxiosError(err) || !err.response) throw err;
+      while (true) {
+        const release = await this.requestGate.acquire();
+        try {
+          const response = await fn();
+          return response.data;
+        } catch (err) {
+          if (!isAxiosError(err) || !err.response) throw err;
 
-        const { status, headers } = err.response;
+          const { status, headers } = err.response;
 
-        if (!RETRY_STATUS_CODES.has(status) || attempt >= maxRetries) {
-          throw this.toGraphApiError(err);
+          if (!RETRY_STATUS_CODES.has(status) || attempt >= maxRetries) {
+            throw this.toGraphApiError(err);
+          }
+
+          const retryAfter =
+            status === 429
+              ? Number(headers["retry-after"] ?? 1)
+              : Math.pow(2, attempt); // exponential back-off
+
+          logger.warn(
+            { status, attempt, retryAfterSeconds: retryAfter },
+            "Graph request failed — retrying"
+          );
+          await sleep(retryAfter * 1000);
+          attempt++;
+        } finally {
+          release();
         }
-
-        const retryAfter =
-          status === 429
-            ? Number(headers["retry-after"] ?? 1)
-            : Math.pow(2, attempt); // exponential back-off
-
-        logger.warn(
-          { status, attempt, retryAfterSeconds: retryAfter },
-          "Graph request failed — retrying"
-        );
-        await sleep(retryAfter * 1000);
-        attempt++;
-      } finally {
-        release();
       }
-    }
+    });
   }
 
   private toGraphApiError(err: ReturnType<typeof isAxiosError> extends true ? never : unknown): GraphApiError {

@@ -6,28 +6,22 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://intune:intune@db:5432/intune_gpmc
-      - NEXTAUTH_URL=http://localhost:3000
-      # Copy remaining vars from .env.example
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: intune
-      POSTGRES_PASSWORD: intune
-      POSTGRES_DB: intune_gpmc
+      - DATABASE_URL=file:/data/ismc.db
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - AUTH_SECRET=${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      - AUTH_ENTRA_TENANT_ID=${AUTH_ENTRA_TENANT_ID:?Set AUTH_ENTRA_TENANT_ID in .env}
+      - AUTH_ENTRA_CLIENT_ID=${AUTH_ENTRA_CLIENT_ID:?Set AUTH_ENTRA_CLIENT_ID in .env}
+      - AUTH_ENTRA_CLIENT_SECRET=${AUTH_ENTRA_CLIENT_SECRET:?Set AUTH_ENTRA_CLIENT_SECRET in .env}
+      - NEXT_PUBLIC_ENABLE_MOCK=${NEXT_PUBLIC_ENABLE_MOCK:-false}
+      - ENABLE_WRITE_OPERATIONS=${ENABLE_WRITE_OPERATIONS:-false}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - appdata:/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U intune -d intune_gpmc"]
-      interval: 5s
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
     restart: unless-stopped
 
 volumes:
-  pgdata:
+  appdata:

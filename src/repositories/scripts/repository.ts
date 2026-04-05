@@ -16,6 +16,7 @@ import { mapWithConcurrency } from "@/lib/utils";
 import { mapAssignments } from "../shared/assignmentMapper";
 import { getGraphListConcurrency } from "../shared/graphConcurrency";
 import { getGraphFetchPageSize } from "../shared/graphFetchPageSize";
+import logger from "@/lib/logger";
 
 interface GraphScript {
   id: string;
@@ -79,14 +80,17 @@ export class ScriptRepository implements PolicyRepository {
     return this.mode === "remediations" ? PolicyType.Remediation : PolicyType.Script;
   }
 
-  async listPolicies(query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
+  async listPolicies(_query?: Partial<PolicyListQuery>): Promise<PolicyObject[]> {
     const params = new URLSearchParams({ $top: String(getGraphFetchPageSize()) });
     const path = `${this.listPath}?${params}`;
     const raw = await this.client.getAll<GraphScript>(path, "beta");
     const policies = await mapWithConcurrency(raw, getGraphListConcurrency(), async (p) => {
         const assignments = await this.client
           .getAll<GraphAssignment>(this.assignmentsPath(p.id), "beta")
-          .catch(() => []);
+          .catch((err) => {
+            logger.warn({ policyId: p.id, err }, "Failed to fetch script assignments");
+            return [] as GraphAssignment[];
+          });
         return mapScript(p, this.tenantId, assignments, this.policyType);
       });
     return policies;

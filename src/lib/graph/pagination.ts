@@ -11,8 +11,6 @@ import logger from "@/lib/logger";
 export interface PaginationOptions {
   /** Maximum number of items to return across all pages. Default: unlimited */
   maxItems?: number;
-  /** Page size hint (appended as $top query param). Default: 100 */
-  pageSize?: number;
   /** Abort signal to cancel pagination mid-flight */
   signal?: AbortSignal;
 }

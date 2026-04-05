@@ -48,7 +48,7 @@ export async function GET(
       undefined,
       tenantSession.isDemoMode
     );
-    const inventory = new PolicyInventoryService(registry);
+    const inventory = new PolicyInventoryService(registry, tenantSession.tenantId);
     const reporter = new ReportService();
 
     const policies = await inventory.listAll();
